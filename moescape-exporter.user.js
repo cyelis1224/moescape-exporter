@@ -3,7 +3,7 @@
 // @namespace    Holly
 // @author       Holly
 // @collaborator Dagyr
-// @version      2.2.5
+// @version      2.2.6
 // @description  Preserve your Tavern conversations. Supports both Moescape and Yodayo.
 // @match        https://yodayo.com/*
 // @match        https://moescape.ai/*
@@ -46,13 +46,13 @@
     let imagePopup
     let imageViewerModal = null
     let chatCharacterPhotos = {} // Store character photos by chat UUID
-
+    
     // Pagination state
     let currentPage = 1
     let pageSize = 20
     let totalImages = 0
     let filteredImages = []
-
+    
     // Image viewer state
     let currentImageViewerIndex = 0
     let imageViewerImages = []
@@ -616,7 +616,7 @@
     // Site detection and color schemes
     const isMoescape = location.hostname.includes('moescape.ai')
     const isYodayo = location.hostname.includes('yodayo.com')
-
+    
     // Color schemes based on site
     const colorScheme = isMoescape ? {
         // Moescape colors (darker, more purple-tinted)
@@ -652,16 +652,16 @@
             width: 8px;
             height: 8px;
         }
-
+        
         *::-webkit-scrollbar-track {
             background: transparent;
         }
-
+        
         *::-webkit-scrollbar-thumb {
             background: ${colorScheme.border};
             border-radius: 4px;
         }
-
+        
         *::-webkit-scrollbar-thumb:hover {
             background: ${colorScheme.cardBackground};
         }
@@ -1291,7 +1291,7 @@
             cover.style.webkitBackdropFilter = 'blur(0px)'
             popup.style.opacity = '0'
             popup.style.transform = 'translate(-50%, -50%) scale(0.95)'
-
+            
             // Remove from DOM after animation
             setTimeout(function() {
                 if (cover && cover.parentNode) {
@@ -1299,7 +1299,7 @@
                 }
             }, 300)
         }
-
+        
         var closeButton = document.createElement('button')
         closeButton.innerText = 'X'
         closeButton.addEventListener('click', closeModal)
@@ -1326,9 +1326,9 @@
         for (var key in formatOptions) {
             if (formatOptions.hasOwnProperty(key)) {
                 var option = document.createElement('option')
-                option.setAttribute('value', key)
+            option.setAttribute('value', key)
                 option.innerText = formatOptions[key]
-                formatSelect.appendChild(option)
+            formatSelect.appendChild(option)
             }
         }
 
@@ -1625,7 +1625,7 @@
             }
 
             charIconsWrapper.appendChild(charIconsContainer)
-
+            
             // Add character icons
             chatData.chars.forEach(function(char, charIndex) {
                 // Create clickable link wrapper
@@ -1650,7 +1650,7 @@
                 var iconSize = '56px'
                 charIcon.style.cssText = 'width: ' + iconSize + '; height: ' + iconSize + '; border-radius: 50%; border: 2px solid ' + colorScheme.border + '; overflow: hidden; flex-shrink: 0; background: ' + colorScheme.cardBackground + '; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s;'
                 charIcon.title = char.name
-
+                
                 // Add hover effect
                 charLink.addEventListener('mouseenter', function() {
                     charIcon.style.transform = 'scale(1.05)'
@@ -1660,7 +1660,7 @@
                     charIcon.style.transform = 'scale(1)'
                     charIcon.style.boxShadow = 'none'
                 })
-
+                
                 if (char.photos && char.photos.thumbnail) {
                     // Use thumbnail photo if available
                     charIcon.innerHTML = '<img src="' + char.photos.thumbnail + '" style="width: 100%; height: 100%; object-fit: cover;">'
@@ -1669,11 +1669,11 @@
                     charIcon.innerHTML = '<img src="' + char.photos.foreground[0] + '" style="width: 100%; height: 100%; object-fit: cover;">'
                 }
                 // If no photos available, leave the icon empty (just the background)
-
+                
                 charLink.appendChild(charIcon)
                 charIconsContainer.appendChild(charLink)
             })
-
+            
             // Create container for name and date
             var nameDateContainer = document.createElement('div')
             nameDateContainer.style.cssText = 'display: flex; flex-direction: column; flex: 1; gap: 4px; min-width: 0;'
@@ -2145,7 +2145,7 @@
         footer.appendChild(formatSelect)
         popup.appendChild(footer)
         document.body.appendChild(cover)
-
+        
         // Add ESC key listener
         const escHandler = (e) => {
             if (e.key === 'Escape') {
@@ -2159,7 +2159,7 @@
             }
         }
         document.addEventListener('keydown', escHandler)
-
+        
         // Add backdrop click handler
         cover.addEventListener('click', function(e) {
             // Only close if clicking the backdrop itself, not the popup
@@ -2167,7 +2167,7 @@
                 closeModal()
             }
         })
-
+        
         // Trigger animation
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -2191,7 +2191,7 @@
             {
             imagePopup.style.opacity = '0'
             imagePopup.style.transform = 'translate(-50%, -50%) scale(0.95)'
-
+            
             // Remove from DOM after animation
             setTimeout(function() {
                 if (imagePopup && imagePopup.parentNode) {
@@ -2211,7 +2211,7 @@
             backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0)'
             backdrop.style.backdropFilter = 'blur(0px)'
             backdrop.style.webkitBackdropFilter = 'blur(0px)'
-
+            
             // Remove from DOM after animation
             setTimeout(function() {
                 if (backdrop && backdrop.parentNode) {
@@ -3376,9 +3376,32 @@
             var contentContainer = imageViewerModal.querySelector('div')
             if (!contentContainer) return
 
-            // Remove existing comparison grid if present
+            // Fade out existing comparison grid if present
             var existingGrid = contentContainer.querySelector('.comparison-grid')
-            if (existingGrid) existingGrid.remove()
+            if (existingGrid) {
+                // Get all images in the existing grid and fade them out
+                var existingImages = existingGrid.querySelectorAll('img')
+                for (var i = 0; i < existingImages.length; i++) {
+                    existingImages[i].style.transition = 'opacity 0.15s'
+                    existingImages[i].style.opacity = '0'
+                }
+                
+                // Remove grid after fade out completes
+                setTimeout(function() {
+                    if (existingGrid && existingGrid.parentNode) {
+                        existingGrid.parentNode.removeChild(existingGrid)
+                    }
+                    // Continue with creating new grid after old one is removed
+                    ImageManager._createComparisonGrid(enabled, batchImages, contentContainer)
+                }, 150)
+            } else {
+                // No existing grid, create new one immediately
+                ImageManager._createComparisonGrid(enabled, batchImages, contentContainer)
+            }
+        },
+        
+        // Helper function to create the comparison grid (separated for fade transitions)
+        _createComparisonGrid: function(enabled, batchImages, contentContainer) {
 
             // Hide/show single image view
             var imageZoomContainer = contentContainer.querySelector('.image-zoom-container')
@@ -3388,6 +3411,24 @@
             // Find metadata toggle container and download button using stored references
             var metadataToggle = document.getElementById('holly-metadata-toggle-container')
 
+            // Find download button more reliably
+            var downloadButton = null
+            var allButtons = document.querySelectorAll('button')
+            for (var btnIdx = 0; btnIdx < allButtons.length; btnIdx++) {
+                var btn = allButtons[btnIdx]
+                if (btn.textContent === 'Download' && btn.style.position === 'fixed' && btn.style.bottom === '20px') {
+                    downloadButton = btn
+                break
+            }
+        }
+
+            var imageZoomContainer = contentContainer.querySelector('.image-zoom-container')
+            var singleImg = imageZoomContainer ? imageZoomContainer.querySelector('img') : contentContainer.querySelector('img')
+            var metadata = contentContainer.querySelector('.image-metadata')
+            
+            // Find metadata toggle container and download button using stored references
+            var metadataToggle = document.getElementById('holly-metadata-toggle-container')
+            
             // Find download button more reliably
             var downloadButton = null
             var allButtons = document.querySelectorAll('button')
@@ -3429,7 +3470,7 @@
 
                 // Add desktop and mobile responsive styles if not already added
                 if (!document.getElementById('comparison-grid-mobile-style')) {
-                    const mobileStyle = document.createElement('style')
+                    var mobileStyle = document.createElement('style')
                     mobileStyle.id = 'comparison-grid-mobile-style'
                     mobileStyle.textContent = `
                     /* Desktop styles for grid items */
@@ -3506,18 +3547,21 @@
                 }
 
                 // Add each batch image to grid
-                batchImages.forEach((imgData, idx) => {
-                    const imgContainer = document.createElement('div')
-                    imgContainer.style.cssText = `position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: ${colorScheme.cardBackground}; border-radius: 8px; padding: 0; border: 1px solid ${colorScheme.border}; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;`
+                var newImages = []
+                for (var idx = 0; idx < batchImages.length; idx++) {
+                    var imgData = batchImages[idx]
+                    var imgContainer = document.createElement('div')
+                    imgContainer.style.cssText = 'position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: ' + colorScheme.cardBackground + '; border-radius: 8px; padding: 0; border: 1px solid ' + colorScheme.border + '; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;'
 
-                    const img = document.createElement('img')
+                    var img = document.createElement('img')
                     img.src = imgData.url
-                    img.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: block;`
+                    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.15s;'
+                    newImages.push(img)
 
                     // Add hover effect
                     imgContainer.addEventListener('mouseenter', function() {
                         this.style.transform = 'scale(1.05)'
-                        this.style.boxShadow = `0 4px 12px ${colorScheme.glowColor}`
+                        this.style.boxShadow = '0 4px 12px ' + colorScheme.glowColor
                     })
                     imgContainer.addEventListener('mouseleave', function() {
                         this.style.transform = 'scale(1)'
@@ -3527,7 +3571,13 @@
                     // Click handler to switch to single view of this image
                     imgContainer.addEventListener('click', function() {
                         // Find the index of this image in imageViewerImages
-                        const targetIndex = imageViewerImages.findIndex(img => img.url === imgData.url)
+                        var targetIndex = -1
+                        for (var imgIdx = 0; imgIdx < imageViewerImages.length; imgIdx++) {
+                            if (imageViewerImages[imgIdx].url === imgData.url) {
+                                targetIndex = imgIdx
+                                break
+                            }
+                        }
                         if (targetIndex !== -1 && window.hollyShowImageAtIndex && window.hollySetComparisonMode) {
                             // Exit comparison mode first
                             window.hollySetComparisonMode(false)
@@ -3540,8 +3590,8 @@
 
                             // Update toggle button icon if it exists
                             if (window.hollyComparisonToggleBtnRef && window.hollyComparisonToggleBtnRef.current) {
-                                const toggleBtn = window.hollyComparisonToggleBtnRef.current
-                                const gridPath = toggleBtn.querySelector('path')
+                                var toggleBtn = window.hollyComparisonToggleBtnRef.current
+                                var gridPath = toggleBtn.querySelector('path')
                                 if (gridPath) {
                                     gridPath.setAttribute('d', 'M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z')
                                 }
@@ -3552,9 +3602,17 @@
                     imgContainer.appendChild(img)
 
                     grid.appendChild(imgContainer)
-                })
-
+                }
+                
+                // Append grid to container (initially with opacity 0 images)
                 contentContainer.appendChild(grid)
+                
+                // Fade in new images after a brief delay
+                setTimeout(function() {
+                    for (var i = 0; i < newImages.length; i++) {
+                        newImages[i].style.opacity = '1'
+                    }
+                }, 10)
         } else {
             // Show single image and metadata
             if (imageZoomContainer) imageZoomContainer.style.display = 'block'
@@ -3697,7 +3755,7 @@
 
         // Lock body scroll when popup opens
             lockBodyScroll()
-        
+
         // Create backdrop overlay
             var self = this;
             var backdrop = document.createElement('div');
@@ -4127,11 +4185,11 @@
                 var downloadSelectedBtn = imagePopup.querySelector('#download-selected-btn');
                 if (downloadSelectedBtn) {
                     // Add hover effects
-                    downloadSelectedBtn.addEventListener('mouseenter', function() {
+                    downloadSelectedBtn.addEventListener('mouseenter', function() { 
                         this.style.background = colorScheme.hoverBackground;
                         this.style.color = colorScheme.hoverText;
                     });
-                    downloadSelectedBtn.addEventListener('mouseleave', function() {
+                    downloadSelectedBtn.addEventListener('mouseleave', function() { 
                         this.style.background = colorScheme.gradient;
                         this.style.color = 'black';
                     });

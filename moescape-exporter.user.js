@@ -3,7 +3,7 @@
 // @namespace    Holly
 // @author       Holly
 // @collaborator Dagyr
-// @version      2.2.4
+// @version      2.2.5
 // @description  Preserve your Tavern conversations. Supports both Moescape and Yodayo.
 // @match        https://yodayo.com/*
 // @match        https://moescape.ai/*
@@ -1710,7 +1710,8 @@
 
             bookmarkButton.addEventListener('click', function(e) {
                 e.stopPropagation()
-                var uuid = chatData.uuid
+                // Get UUID from button's data attribute to avoid closure issues
+                var uuid = this.getAttribute('data-chat-uuid')
                 var nowBookmarked = BookmarkManager.toggleBookmark(uuid)
 
                 // Get the bookmark path element from this button

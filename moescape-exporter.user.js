@@ -3,7 +3,7 @@
 // @namespace    Holly
 // @author       Holly
 // @collaborator Dagyr
-// @version      2.0.0
+// @version      2.1.0
 // @description  Preserve your Tavern conversations. Supports both Moescape and Yodayo.
 // @match        https://yodayo.com/*
 // @match        https://moescape.ai/*
@@ -21,21 +21,108 @@
     let imagePopup
     let imageViewerModal = null
     let chatCharacterPhotos = {} // Store character photos by chat UUID
-    
+
     // Pagination state
     let currentPage = 1
     let pageSize = 20
     let totalImages = 0
     let filteredImages = []
-    
+
     // Image viewer state
     let currentImageViewerIndex = 0
     let imageViewerImages = []
-    
+
+    // Caching system
+    const chatCache = {
+        // Cache for chat lists
+        chatList: {
+            data: null,
+            timestamp: null,
+            ttl: 5 * 60 * 1000 // 5 minutes
+        },
+        // Cache for individual chat messages (keyed by UUID)
+        chatMessages: {},
+        // Cache for image counts (keyed by UUID)
+        imageCounts: {},
+
+        // Check if cached data is still valid
+        isValid: function(cacheEntry) {
+            if (!cacheEntry || !cacheEntry.timestamp) return false
+            const age = Date.now() - cacheEntry.timestamp
+            return age < (cacheEntry.ttl || 5 * 60 * 1000)
+        },
+
+        // Get cached chat list if valid
+        getChatList: function() {
+            if (this.isValid(this.chatList)) {
+                return this.chatList.data
+            }
+            return null
+        },
+
+        // Set cached chat list
+        setChatList: function(data) {
+            this.chatList = {
+                data: data,
+                timestamp: Date.now(),
+                ttl: 5 * 60 * 1000
+            }
+        },
+
+        // Get cached messages for a chat
+        getChatMessages: function(uuid) {
+            const cached = this.chatMessages[uuid]
+            if (this.isValid(cached)) {
+                return cached.data
+            }
+            return null
+        },
+
+        // Set cached messages for a chat
+        setChatMessages: function(uuid, data) {
+            this.chatMessages[uuid] = {
+                data: data,
+                timestamp: Date.now(),
+                ttl: 10 * 60 * 1000 // 10 minutes for individual chats
+            }
+        },
+
+        // Get cached image count
+        getImageCount: function(uuid) {
+            const cached = this.imageCounts[uuid]
+            if (this.isValid(cached)) {
+                return cached.data
+            }
+            return null
+        },
+
+        // Set cached image count
+        setImageCount: function(uuid, count) {
+            this.imageCounts[uuid] = {
+                data: count,
+                timestamp: Date.now(),
+                ttl: 30 * 60 * 1000 // 30 minutes for image counts (less likely to change)
+            }
+        },
+
+        // Clear all cache
+        clear: function() {
+            this.chatList = { data: null, timestamp: null, ttl: 5 * 60 * 1000 }
+            this.chatMessages = {}
+            this.imageCounts = {}
+        },
+
+        // Clear cache for a specific chat
+        clearChat: function(uuid) {
+            delete this.chatMessages[uuid]
+            delete this.imageCounts[uuid]
+        }
+    }
+
     // Site detection and color schemes
     const isMoescape = location.hostname.includes('moescape.ai')
     const isYodayo = location.hostname.includes('yodayo.com')
-    
+
     // Color schemes based on site
     const colorScheme = isMoescape ? {
         // Moescape colors (darker, more purple-tinted)
@@ -63,7 +150,7 @@
         glowColor: 'rgba(168, 85, 247, 0.3)' // Purple glow for Yodayo
     }
 
-    // Add custom scrollbar styles
+    // Add custom scrollbar styles and mobile touch optimizations
     const style = document.createElement('style')
     style.textContent = `
         /* Custom scrollbar for all elements */
@@ -71,18 +158,94 @@
             width: 8px;
             height: 8px;
         }
-        
+
         *::-webkit-scrollbar-track {
             background: transparent;
         }
-        
+
         *::-webkit-scrollbar-thumb {
             background: ${colorScheme.border};
             border-radius: 4px;
         }
-        
+
         *::-webkit-scrollbar-thumb:hover {
             background: ${colorScheme.cardBackground};
+        }
+
+        /* Mobile touch optimizations */
+        @media (max-width: 768px) {
+            /* Larger touch targets for buttons */
+            button, .holly-button {
+                min-height: 44px !important;
+                min-width: 44px !important;
+                padding: 12px 16px !important;
+            }
+
+            /* Larger touch targets for navigation arrows in image viewer */
+            .image-viewer-arrow-left,
+            .image-viewer-arrow-right {
+                min-width: 56px !important;
+                min-height: 56px !important;
+                width: 56px !important;
+                height: 56px !important;
+            }
+
+            /* Larger touch targets for modal controls */
+            #holly-metadata-toggle-container {
+                min-height: 44px !important;
+            }
+
+            #holly-metadata-toggle-container > div:first-child {
+                min-width: 48px !important;
+                min-height: 26px !important;
+            }
+
+            /* Better spacing for touch interactions */
+            .comparison-grid > div {
+                margin-bottom: 12px !important;
+            }
+
+            /* Prevent text selection during swipe */
+            .image-viewer-modal img,
+            .comparison-grid img {
+                -webkit-user-select: none !important;
+                -moz-user-select: none !important;
+                -ms-user-select: none !important;
+                user-select: none !important;
+                -webkit-touch-callout: none !important;
+            }
+
+            /* Larger clickable areas for modals */
+            select, input[type="text"] {
+                min-height: 44px !important;
+                font-size: 16px !important; /* Prevents zoom on iOS */
+            }
+
+            /* Better modal spacing on mobile */
+            .image-popup,
+            div[style*="z-index: 110"] > div {
+                padding: 16px !important;
+                gap: 16px !important;
+            }
+
+            /* Better button spacing in modals */
+            .image-popup button,
+            div[style*="z-index: 110"] button {
+                margin: 4px !important;
+            }
+
+            /* Improved control row spacing */
+            .holly-searchbar-wrap,
+            select#holly_sort_chats,
+            button#holly_recent_chats_filter {
+                margin-bottom: 16px !important;
+            }
+
+            /* Better list item spacing for touch */
+            ul li {
+                padding: 16px !important;
+                margin: 12px 0 !important;
+            }
         }
     `
     document.head.appendChild(style)
@@ -120,7 +283,7 @@
         const tempLink = document.createElement('a')
         tempLink.style.display = 'none'
         document.body.appendChild(tempLink)
-        
+
         if (tempLink.busy) {
             console.log('Exporter already busy')
             return
@@ -134,18 +297,18 @@
         // Look for the Headless UI menu items container
         const menuContainer = document.querySelector('[id^="headlessui-menu-items"]')
         if (!menuContainer) return false
-        
+
         // Check if we already added the exporter option (but allow re-adding if menu was recreated)
         const existingExporter = menuContainer.querySelector('#holly-exporter-menu-item')
         if (existingExporter) {
             // Item exists, make sure it's still in the right place
             const itemsArray = Array.from(menuContainer.querySelectorAll('[role="menuitem"]'))
-            const allChatsIndex = itemsArray.findIndex(item => 
-                item.textContent.trim().toLowerCase().includes('all chats') || 
+            const allChatsIndex = itemsArray.findIndex(item =>
+                item.textContent.trim().toLowerCase().includes('all chats') ||
                 item.textContent.trim().toLowerCase().includes('all chat')
             )
             const exporterIndex = itemsArray.findIndex(item => item.id === 'holly-exporter-menu-item')
-            
+
             // If exporter is not right after "All Chats", remove and re-insert it
             if (allChatsIndex >= 0 && exporterIndex !== allChatsIndex + 1) {
                 existingExporter.remove()
@@ -153,11 +316,11 @@
                 return false // Already in correct position
             }
         }
-        
+
         // Find all existing menu items to understand the structure
         const existingItems = menuContainer.querySelectorAll('[role="menuitem"]')
         if (existingItems.length === 0) return false
-        
+
         // Find "All Chats" item to use as a template (it has an icon)
         let allChatsTemplate = null
         for (let item of existingItems) {
@@ -167,7 +330,7 @@
                 break
             }
         }
-        
+
         // Use "All Chats" as template if found, otherwise use first item with icon or just first item
         let templateItem = allChatsTemplate
         if (!templateItem) {
@@ -181,27 +344,27 @@
         if (!templateItem) {
             templateItem = existingItems[0]
         }
-        
+
         // Clone the template item to match the structure and styling exactly
         const exporterItem = templateItem.cloneNode(true)
         exporterItem.id = 'holly-exporter-menu-item'
-        
+
         // Remove any existing headlessui id attribute
         if (exporterItem.id) {
             exporterItem.id = 'holly-exporter-menu-item'
         }
-        
+
         // Create the download icon SVG
         const downloadIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7,10 12,15 17,10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`
-        
+
         // Replace the icon if one exists, or add it
         const existingIcon = exporterItem.querySelector('svg')
-        
+
         if (existingIcon) {
             // Replace just the SVG content, preserving harnessing wrapper
             const wrapper = existingIcon.parentElement
             const wrapperClasses = wrapper ? wrapper.className : ''
-            
+
             // Create new SVG element with proper namespace
             const newIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
             newIcon.setAttribute('width', '24')
@@ -212,23 +375,23 @@
             newIcon.setAttribute('stroke-width', '2')
             newIcon.setAttribute('stroke-linecap', 'round')
             newIcon.setAttribute('stroke-linejoin', 'round')
-            
+
             // Add path elements
             const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
             path1.setAttribute('d', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4')
             newIcon.appendChild(path1)
-            
+
             const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
             polyline.setAttribute('points', '7,10 12,15 17,10')
             newIcon.appendChild(polyline)
-            
+
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
             line.setAttribute('x1', '12')
             line.setAttribute('y1', '15')
             line.setAttribute('x2', '12')
             line.setAttribute('y2', '3')
             newIcon.appendChild(line)
-            
+
             // Preserve wrapper if it exists, otherwise replace directly
             if (wrapper && wrapper !== exporterItem) {
                 wrapper.innerHTML = ''
@@ -261,11 +424,11 @@
                 }
             }
         }
-        
+
         // Replace the text content - since we cloned from "All Chats", replace that text
         const textToReplace = 'All Chats'
         const newText = 'Export Chat/Images'
-        
+
         // Find and replace text nodes, preserving the SVG icon
         // Don't use textContent as it removes the SVG - use TreeWalker instead
         const walker = document.createTreeWalker(
@@ -274,7 +437,7 @@
             null,
             false
         )
-        
+
         let node
         while (node = walker.nextNode()) {
             const text = node.textContent.trim()
@@ -291,11 +454,11 @@
                 break
             }
         }
-        
+
         // Ensure proper attributes (should already be set from clone, but make sure)
         exporterItem.setAttribute('role', 'menuitem')
         exporterItem.setAttribute('tabindex', '-1')
-        
+
         // Ensure left alignment by matching other menu items' structure
         const textElements = exporterItem.querySelectorAll('span, div')
         textElements.forEach(el => {
@@ -311,31 +474,31 @@
         exporterItem.addEventListener('mouseleave', function () {
             this.style.backgroundColor = ''
         })
-        
+
         // Add click handler
         exporterItem.addEventListener('click', function(e) {
             e.preventDefault()
             e.stopPropagation()
-            
+
             // Close the menu first (trigger click on menu button)
             const menuButton = document.querySelector('[id^="headlessui-menu-button"]')
             if (menuButton) {
                 menuButton.click()
             }
-            
+
             // Small delay to let menu close
             setTimeout(() => {
                 triggerExporter()
             }, 150)
         })
-        
+
         // Find "All Chats" menu item and insert after it
         let allChatsItem = null
         let allChatsIndex = -1
-        
+
         // Convert NodeList to array for easier manipulation
         const itemsArray = Array.from(existingItems)
-        
+
         for (let i = 0; i < itemsArray.length; i++) {
             const item = itemsArray[i]
             const text = item.textContent.trim().toLowerCase()
@@ -345,7 +508,7 @@
                 break
             }
         }
-        
+
         if (allChatsItem) {
             // Insert immediately after "All Chats" BUT before the divider that follows it
             // This keeps it in the same group as "All Chats"
@@ -359,7 +522,7 @@
             // Fallback: insert after existing items (add to the end)
             menuContainer.appendChild(exporterItem)
         }
-        
+
         return true
     }
 
@@ -418,21 +581,21 @@
 
                 headerRightDiv.insertBefore(btn, headerRightDiv.firstChild)
                 }
-            
+
             // Try to add exporter to chat settings menu (only on chat pages)
             if (location.href.includes('/tavern/chat/')) {
                 addExporterToChatMenu()
             }
 
             }, 1000)
-        
+
         // Also watch for menu dynamically opening using MutationObserver
         const observer = new MutationObserver(function(mutations) {
             if (location.href.includes('/tavern/chat/')) {
                 addExporterToChatMenu()
             }
         })
-        
+
         observer.observe(document.body, {
             childList: true,
             subtree: true
@@ -441,6 +604,46 @@
 
     function retrieveChatsChunk(offset, collected, btn)
         {
+        // Check cache on first chunk (offset 0) - if we have a cached list, use it
+        if (offset === 0) {
+            const cachedList = chatCache.getChatList()
+            if (cachedList && cachedList.length > 0) {
+                // Use cached data
+                collected = cachedList.slice() // Create a copy
+
+                // Filter and show immediately
+                btn.busy = false
+                const textSpan = btn.querySelector('span')
+                if (textSpan) {
+                    textSpan.textContent = 'Export Chat/Images'
+                }
+
+                // Apply filtering if needed
+                let toShow = collected
+                try {
+                    if (window.hollyCurrentChatUuid) {
+                        const current = collected.find(c => c.uuid === window.hollyCurrentChatUuid)
+                        if (current && current.chars && current.chars.length) {
+                            const targetCharUuids = new Set(current.chars.map(c => c.uuid).filter(Boolean))
+                            if (targetCharUuids.size > 0) {
+                                toShow = collected.filter(chat => (chat.chars || []).some(ch => targetCharUuids.has(ch.uuid)))
+                            }
+                        }
+                    }
+                } catch (_) {}
+
+                window.currentChats = toShow
+
+                if (toShow.length > 0) {
+                    showChatsToDownload(toShow)
+                } else {
+                    alert('Unable to find any chats.')
+                }
+
+                return // Don't make API call
+            }
+        }
+
         ajax('https://api.' + location.hostname + '/v1/chats?limit=' + QUERY_BATCH_SIZE + '&offset=' + offset, false, function (r)
             {
             r = JSON.parse(r)
@@ -453,6 +656,7 @@
                     uuid: chat.uuid,
                     name: chat.name,
                     date: chat.created_at,
+                    imageCount: null, // Will be fetched later
                     chars: chat.characters.map(function (char)
                         {
                         return {
@@ -474,6 +678,9 @@
                 retrieveChatsChunk(offset + QUERY_BATCH_SIZE, collected, btn)
             else
                 {
+                // Cache the complete chat list
+                chatCache.setChatList(collected)
+
                 btn.busy = false
                 // Reset the button text while preserving the SVG icon
                 const textSpan = btn.querySelector('span')
@@ -505,6 +712,134 @@
                 }
             })
         }
+
+    // Function to fetch image count for a single chat (lightweight - just counts messages with text_to_image)
+    function fetchImageCountForChat(chatUuid, callback) {
+        // Check cache first
+        const cachedCount = chatCache.getImageCount(chatUuid)
+        if (cachedCount !== null) {
+            callback(cachedCount)
+            return
+        }
+
+        ajax('https://api.' + location.hostname + '/v1/chats/' + chatUuid + '/messages?limit=' + QUERY_BATCH_SIZE + '&offset=0', false, function(r) {
+            try {
+                const response = JSON.parse(r)
+                if (!response || response.error) {
+                    callback(0)
+                    return
+                }
+
+                let imageCount = 0
+                let messages = response.messages || []
+
+                // Count messages with text_to_image (this is a batch, may need to fetch more)
+                messages.forEach(msg => {
+                    if (msg.text_to_image) {
+                        imageCount++
+                    }
+                })
+
+                // If there are more messages, fetch them recursively
+                if (messages.length === QUERY_BATCH_SIZE) {
+                    fetchImageCountRecursive(chatUuid, QUERY_BATCH_SIZE, imageCount, callback)
+                } else {
+                    // Cache and return the final count
+                    chatCache.setImageCount(chatUuid, imageCount)
+                    callback(imageCount)
+                }
+            } catch (e) {
+                console.error('Error fetching image count:', e)
+                callback(0)
+            }
+        })
+    }
+
+    // Recursive helper to fetch remaining messages and count images
+    function fetchImageCountRecursive(chatUuid, offset, currentCount, callback) {
+        ajax('https://api.' + location.hostname + '/v1/chats/' + chatUuid + '/messages?limit=' + QUERY_BATCH_SIZE + '&offset=' + offset, false, function(r) {
+            try {
+                const response = JSON.parse(r)
+                if (!response || response.error) {
+                    callback(currentCount)
+                    return
+                }
+
+                let messages = response.messages || []
+                let additionalCount = 0
+
+                messages.forEach(msg => {
+                    if (msg.text_to_image) {
+                        additionalCount++
+                    }
+                })
+
+                const newCount = currentCount + additionalCount
+
+                // If there are more messages, continue fetching
+                if (messages.length === QUERY_BATCH_SIZE) {
+                    fetchImageCountRecursive(chatUuid, offset + QUERY_BATCH_SIZE, newCount, callback)
+                } else {
+                    // Cache and return the final count
+                    chatCache.setImageCount(chatUuid, newCount)
+                    callback(newCount)
+                }
+            } catch (e) {
+                console.error('Error fetching image count:', e)
+                callback(currentCount)
+            }
+        })
+    }
+
+    // Function to extract recent chat UUIDs from the DOM (in order)
+    function extractRecentChatUuids() {
+        const chatItems = [] // Store {uuid, left} pairs to sort by position
+
+        // Find all links in the recent chats horizontal scroll
+        // The structure has divs with position: absolute and left styles indicating order
+        const overflowContainers = document.querySelectorAll('div.overflow-hidden')
+
+        for (const container of overflowContainers) {
+            // Find all divs with position: absolute (these are the individual chat items)
+            const absoluteDivs = container.querySelectorAll('div[style*="position: absolute"]')
+
+            for (const div of absoluteDivs) {
+                // Get the left position from the style
+                const style = div.getAttribute('style') || ''
+                const leftMatch = style.match(/left:\s*(\d+)px/)
+                if (!leftMatch) continue
+
+                const left = parseInt(leftMatch[1])
+
+                // Find the link inside this div
+                const link = div.querySelector('a[href^="/tavern/chat/"]')
+                if (!link) continue
+
+                const href = link.getAttribute('href')
+                if (!href || !href.startsWith('/tavern/chat/')) continue
+
+                // Extract UUID from href
+                const uuidMatch = href.match(/\/tavern\/chat\/([a-f0-9\-]+)/i)
+                if (!uuidMatch || !uuidMatch[1]) continue
+
+                const uuid = uuidMatch[1]
+
+                // Store with left position to preserve order
+                chatItems.push({ uuid, left })
+            }
+
+            // If we found items in this container, use them (stop at first non-empty)
+            if (chatItems.length > 0) {
+                break
+            }
+        }
+
+        // Sort by left position (ascending) to get the correct order
+        chatItems.sort((a, b) => a.left - b.left)
+
+        // Extract just the UUIDs in order
+        return chatItems.map(item => item.uuid)
+    }
 
     function showChatsToDownload(chats)
         {
@@ -539,7 +874,7 @@
             cover.style.webkitBackdropFilter = 'blur(0px)'
             popup.style.opacity = '0'
             popup.style.transform = 'translate(-50%, -50%) scale(0.95)'
-            
+
             // Remove from DOM after animation
             setTimeout(() => {
                 if (cover && cover.parentNode) {
@@ -547,7 +882,7 @@
                 }
             }, 300)
         }
-        
+
         let closeButton = document.createElement('button')
         closeButton.innerText = 'X'
         closeButton.addEventListener('click', closeModal)
@@ -567,7 +902,8 @@
             'txt': 'Download as TXT',
             'jsonl-st': 'Download as JSONL (SillyTavern)',
             'jsonl-openai': 'Download as JSONL (OpenAI-Template)',
-            'json': 'Download as full JSON'
+            'json': 'Download as full JSON',
+            'html': 'Download as HTML (with images)'
             }))
             {
             let option = document.createElement('option')
@@ -591,7 +927,9 @@
             { value: 'date_asc', label: 'Sort: Date (Oldest first)' },
             { value: 'name_asc', label: 'Sort: Name (A–Z)' },
             { value: 'name_desc', label: 'Sort: Name (Z–A)' },
-            { value: 'chars_asc', label: 'Sort: Character (A–Z)' }
+            { value: 'chars_asc', label: 'Sort: Character (A–Z)' },
+            { value: 'image_count_desc', label: 'Sort: Image Count (Most)' },
+            { value: 'image_count_asc', label: 'Sort: Image Count (Least)' }
         ]
         sortOptions.forEach(o => {
             const opt = document.createElement('option')
@@ -603,7 +941,7 @@
         const searchWrap = document.createElement('div')
         searchWrap.className = 'holly-searchbar-wrap'
         searchWrap.style.cssText = `display: flex; align-items: center; gap: 8px; width: clamp(200px, 40vw, 420px); max-width: 40%; min-width: 410px; width: -webkit-fill-available; margin-bottom: 12px; background: ${colorScheme.cardBackground}; border: 1px solid ${colorScheme.border}; border-radius: 10px; padding: 8px 12px; transition: border-color .15s ease, box-shadow .15s ease;`
-        
+
         // Add responsive styles for mobile
         if (!document.getElementById('holly-searchbar-responsive')) {
             const searchBarResponsive = document.createElement('style')
@@ -620,7 +958,7 @@
             `
             document.head.appendChild(searchBarResponsive)
         }
-        
+
         const searchIcon = document.createElement('span')
         searchIcon.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:${colorScheme.textPrimary};opacity:.9"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`
         const searchInput = document.createElement('input')
@@ -629,9 +967,58 @@
         searchInput.style.cssText = `flex:1; background: transparent; color: ${colorScheme.textPrimary}; border: none; outline: none; font-size: 14px; caret-color: ${colorScheme.hoverText};`
         searchWrap.appendChild(searchIcon)
         searchWrap.appendChild(searchInput)
-        // Add search first, then sort
+        // Extract recent chat UUIDs from DOM
+        const recentChatUuids = extractRecentChatUuids()
+
+        // Recent Chats Only filter button
+        const recentChatsFilterBtn = document.createElement('button')
+        recentChatsFilterBtn.id = 'holly_recent_chats_filter'
+        recentChatsFilterBtn.textContent = recentChatUuids.length > 0 ? 'Recent Chats Only' : 'Recent Chats Only (N/A)'
+        recentChatsFilterBtn.style.cssText = `font-weight: 500; margin-bottom: 12px; background: ${colorScheme.cardBackground}; color: ${colorScheme.textPrimary}; border: 1px solid ${colorScheme.border}; border-radius: 8px; padding: 8px 12px; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap;`
+        if (recentChatUuids.length === 0) {
+            recentChatsFilterBtn.disabled = true
+            recentChatsFilterBtn.style.opacity = '0.5'
+            recentChatsFilterBtn.style.cursor = 'not-allowed'
+        }
+
+        let isRecentChatsFilterActive = false
+
+        recentChatsFilterBtn.addEventListener('click', function() {
+            if (recentChatUuids.length === 0) return
+            isRecentChatsFilterActive = !isRecentChatsFilterActive
+
+            if (isRecentChatsFilterActive) {
+                this.style.background = colorScheme.gradient
+                this.style.color = 'black'
+                // Hide sort dropdown when recent chats filter is active (sorting is disabled)
+                sortSelect.style.display = 'none'
+            } else {
+                this.style.background = colorScheme.cardBackground
+                this.style.color = colorScheme.textPrimary
+                // Show sort dropdown when filter is inactive
+                sortSelect.style.display = ''
+            }
+
+            recomputeList()
+        })
+
+        recentChatsFilterBtn.addEventListener('mouseenter', function() {
+            if (!this.disabled && !isRecentChatsFilterActive) {
+                this.style.backgroundColor = colorScheme.hoverBackground
+                this.style.color = colorScheme.hoverText
+            }
+        })
+        recentChatsFilterBtn.addEventListener('mouseleave', function() {
+            if (!this.disabled && !isRecentChatsFilterActive) {
+                this.style.backgroundColor = colorScheme.cardBackground
+                this.style.color = colorScheme.textPrimary
+            }
+        })
+
+        // Add search first, then sort, then recent chats filter
         controlsRow.appendChild(searchWrap)
         controlsRow.appendChild(sortSelect)
+        controlsRow.appendChild(recentChatsFilterBtn)
 
         // Focus styles for search (border highlight based on site theme)
         searchInput.addEventListener('focus', function(){
@@ -651,18 +1038,54 @@
 
         let list = document.createElement('ul')
         list.style.cssText = 'overflow: auto; padding-right: 8px;'
-        
+
         // Keep copies and state for search/sort
         let originalChats = chats.slice()
         let workingChats = chats.slice()
         let currentSort = 'date_desc'
         let currentSearch = ''
 
+        // Virtual scrolling state
+        const ITEMS_PER_BATCH = 50 // Render 50 items at a time
+        const BUFFER_SIZE = 20 // Extra items to render before scroll reaches them
+        let renderedStartIndex = 0
+        let renderedEndIndex = ITEMS_PER_BATCH
+        let sentinel = null // IntersectionObserver sentinel element
+        let observer = null
+
         function renderChatList() {
             // Keep global reference aligned with current rendered order for image lookups
             try { window.currentChats = workingChats } catch (_) {}
+
+            // Reset virtual scrolling when list changes
+            renderedStartIndex = 0
+            renderedEndIndex = Math.min(ITEMS_PER_BATCH, workingChats.length)
+
+            // Disconnect previous observer if exists
+            if (observer) {
+                observer.disconnect()
+                observer = null
+            }
+
+            // Clear list
             list.innerHTML = ''
-            for (let i = 0; i < workingChats.length; i++)
+
+            // For small lists (< 100 items), render all at once (no need for virtual scrolling)
+            if (workingChats.length <= 100) {
+                renderChatItems(0, workingChats.length)
+                return
+            }
+
+            // For large lists, use virtual scrolling
+            renderChatItems(0, renderedEndIndex)
+            setupInfiniteScroll()
+        }
+
+        function renderChatItems(startIdx, endIdx) {
+            // Ensure we don't go beyond array bounds
+            const actualEnd = Math.min(endIdx, workingChats.length)
+
+            for (let i = startIdx; i < actualEnd; i++)
                 {
                 const chatData = workingChats[i]
                 let chatEntry = document.createElement('li')
@@ -673,13 +1096,13 @@
             // Create top row container for name/date and icons
             let topRowContainer = document.createElement('div')
             topRowContainer.style.cssText = 'display: flex; align-items: center; gap: 12px; justify-content: space-between;'
-            
+
             // Create character icons container
             let charIconsContainer = document.createElement('div')
             const numChars = chatData.chars.length
             // On desktop: single row, on mobile: wrap with max 2 columns
             charIconsContainer.style.cssText = `display: grid; grid-template-columns: repeat(${numChars}, auto); gap: 8px; min-width: fit-content; flex-shrink: 0; margin-bottom: -50px; align-items: center;`
-            
+
             // Add responsive styles for mobile
             const style = document.createElement('style')
             if (!document.getElementById('char-icons-responsive-style')) {
@@ -700,14 +1123,14 @@
                 `
                 document.head.appendChild(style)
             }
-            
+
             // Add class to identify containers with multiple characters
             if (numChars > 1) {
                 charIconsContainer.className = 'char-icons-container char-icons-container-multiple'
             } else {
                 charIconsContainer.className = 'char-icons-container'
             }
-            
+
             // Add character icons
             chatData.chars.forEach(function(char, charIndex) {
                 // Create clickable link wrapper
@@ -721,14 +1144,14 @@
                 charLink.target = '_blank'
                 charLink.style.cssText = 'text-decoration: none; cursor: pointer;'
                 charLink.title = `View ${char.name}'s profile`
-                
+
                 let charIcon = document.createElement('div')
                 // Fixed size for all icons on desktop, will shrink on mobile via CSS
                 const iconSize = '80px'
                 charIcon.style.cssText = `width: ${iconSize}; height: ${iconSize}; border-radius: 50%; border: 2px solid ${colorScheme.border}; overflow: hidden; flex-shrink: 0; background: ${colorScheme.cardBackground}; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s;`
                 charIcon.className = 'char-icon-mobile'
                 charIcon.title = char.name
-                
+
                 // Add hover effect
                 charLink.addEventListener('mouseenter', function() {
                     charIcon.style.transform = 'scale(1.05)'
@@ -738,7 +1161,7 @@
                     charIcon.style.transform = 'scale(1)'
                     charIcon.style.boxShadow = 'none'
                 })
-                
+
                 if (char.photos && char.photos.thumbnail) {
                     // Use thumbnail photo if available
                     charIcon.innerHTML = `<img src="${char.photos.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">`
@@ -747,11 +1170,11 @@
                     charIcon.innerHTML = `<img src="${char.photos.foreground[0]}" style="width: 100%; height: 100%; object-fit: cover;">`
                 }
                 // If no photos available, leave the icon empty (just the background)
-                
+
                 charLink.appendChild(charIcon)
                 charIconsContainer.appendChild(charLink)
             })
-            
+
             // Create container for name and date
             let nameDateContainer = document.createElement('div')
             nameDateContainer.style.cssText = 'display: flex; flex-direction: column; flex: 1; gap: 4px;'
@@ -837,6 +1260,59 @@
             }
         }
 
+        // Setup infinite scroll with IntersectionObserver
+        function setupInfiniteScroll() {
+            // Remove old sentinel if exists
+            if (sentinel && sentinel.parentNode) {
+                sentinel.remove()
+            }
+
+            // Only setup if there are more items to load
+            if (renderedEndIndex >= workingChats.length) {
+                return // All items already rendered
+            }
+
+            // Create sentinel element at the bottom of the list
+            sentinel = document.createElement('div')
+            sentinel.className = 'holly-scroll-sentinel'
+            sentinel.style.cssText = `height: 20px; width: 100%;`
+            list.appendChild(sentinel)
+
+            // Setup IntersectionObserver to detect when sentinel comes into view
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && renderedEndIndex < workingChats.length) {
+                        // Load more items
+                        const oldEnd = renderedEndIndex
+                        renderedEndIndex = Math.min(renderedEndIndex + ITEMS_PER_BATCH, workingChats.length)
+
+                        // Render new batch
+                        renderChatItems(oldEnd, renderedEndIndex)
+
+                        // Re-setup observer for new sentinel position
+                        if (renderedEndIndex < workingChats.length) {
+                            setupInfiniteScroll()
+                        } else {
+                            // All items loaded, remove sentinel
+                            if (sentinel && sentinel.parentNode) {
+                                sentinel.remove()
+                            }
+                            if (observer) {
+                                observer.disconnect()
+                                observer = null
+                            }
+                        }
+                    }
+                })
+            }, {
+                root: list,
+                rootMargin: '100px', // Start loading 100px before sentinel is visible
+                threshold: 0.1
+            })
+
+            observer.observe(sentinel)
+        }
+
         // Recompute from original -> filter -> sort -> render
         function recomputeList() {
             // Filter by search
@@ -849,8 +1325,30 @@
                     return (name + ' ' + chars).toLowerCase().includes(q)
                 })
             }
-            // Apply sort
+
+            // Filter by recent chats if active
+            if (isRecentChatsFilterActive && recentChatUuids.length > 0) {
+                // Create a Set for fast lookup
+                const recentChatUuidsSet = new Set(recentChatUuids)
+                // Filter to only recent chats
+                filtered = filtered.filter(chat => recentChatUuidsSet.has(chat.uuid))
+
+                // Sort by the order in recentChatUuids array (preserve DOM order)
+                filtered.sort((a, b) => {
+                    const indexA = recentChatUuids.indexOf(a.uuid)
+                    const indexB = recentChatUuids.indexOf(b.uuid)
+                    // If UUID not found in recent list, put at end
+                    if (indexA === -1) return 1
+                    if (indexB === -1) return -1
+                    return indexA - indexB
+                })
+            }
+
+            // Apply sort (unless we're filtering by recent chats, which preserves DOM order)
             workingChats = filtered.slice()
+
+            // Only apply sort if recent chats filter is not active (preserve DOM order when filtering)
+            if (!isRecentChatsFilterActive) {
             switch (currentSort) {
                 case 'date_asc':
                     workingChats.sort((a,b)=> new Date(a.date) - new Date(b.date));
@@ -864,10 +1362,29 @@
                 case 'chars_asc':
                     workingChats.sort((a,b)=> (a.chars[0]?.name||'').localeCompare(b.chars[0]?.name||''))
                     break
+                case 'image_count_desc':
+                    // Sort by image count descending (most first)
+                    // Treat null as 0 for sorting
+                    workingChats.sort((a,b)=> {
+                        const countA = a.imageCount !== null ? a.imageCount : 0
+                        const countB = b.imageCount !== null ? b.imageCount : 0
+                        return countB - countA
+                    })
+                    break
+                case 'image_count_asc':
+                    // Sort by image count ascending (least first)
+                    // Treat null as 0 for sorting
+                    workingChats.sort((a,b)=> {
+                        const countA = a.imageCount !== null ? a.imageCount : 0
+                        const countB = b.imageCount !== null ? b.imageCount : 0
+                        return countA - countB
+                    })
+                    break
                 case 'date_desc':
                 default:
                     workingChats.sort((a,b)=> new Date(b.date) - new Date(a.date));
                     break
+            }
             }
             try { window.currentChats = workingChats } catch (_) {}
             renderChatList()
@@ -879,7 +1396,73 @@
         // Sorting behavior
         function applySort(value) {
             currentSort = value
-            recomputeList()
+
+            // If sorting by image count, fetch counts for chats that don't have them yet
+            if (value === 'image_count_desc' || value === 'image_count_asc') {
+                fetchImageCountsForMissingChats(originalChats, function() {
+                    recomputeList()
+                })
+            } else {
+                recomputeList()
+            }
+        }
+
+        // Fetch image counts for chats that don't have them yet (with rate limiting)
+        function fetchImageCountsForMissingChats(chats, callback) {
+            const chatsNeedingCounts = chats.filter(chat => chat.imageCount === null)
+
+            if (chatsNeedingCounts.length === 0) {
+                callback()
+                return
+            }
+
+            // Show a loading indicator in the sort dropdown
+            sortSelect.disabled = true
+            const selectedOption = sortSelect.options[sortSelect.selectedIndex]
+            const originalText = selectedOption.textContent
+            selectedOption.textContent = `Loading image counts...`
+
+            // Fetch counts in batches of 5 with delays to avoid rate limiting
+            const batchSize = 5
+            const delayBetweenBatches = 300 // ms
+            let completed = 0
+            let total = chatsNeedingCounts.length
+
+            function processBatch(batchIndex) {
+                const batchStart = batchIndex * batchSize
+                const batchEnd = Math.min(batchStart + batchSize, chatsNeedingCounts.length)
+                const batch = chatsNeedingCounts.slice(batchStart, batchEnd)
+
+                // Fetch counts for this batch
+                const batchPromises = batch.map(chat => {
+                    return new Promise(resolve => {
+                        fetchImageCountForChat(chat.uuid, function(count) {
+                            chat.imageCount = count
+                            completed++
+                            resolve()
+                        })
+                    })
+                })
+
+                Promise.all(batchPromises).then(() => {
+                    // Update progress
+                    const progress = Math.floor((completed / total) * 100)
+                    selectedOption.textContent = `Loading... ${progress}%`
+
+                    // If there are more batches, continue
+                    if (batchEnd < chatsNeedingCounts.length) {
+                        setTimeout(() => processBatch(batchIndex + 1), delayBetweenBatches)
+                    } else {
+                        // All done - restore sort dropdown and callback
+                        sortSelect.disabled = false
+                        selectedOption.textContent = originalText
+                        callback()
+                    }
+                })
+            }
+
+            // Start processing
+            processBatch(0)
         }
         sortSelect.addEventListener('change', function(){ applySort(this.value) })
 
@@ -901,7 +1484,7 @@
         footer.appendChild(formatSelect)
         popup.appendChild(footer)
         document.body.appendChild(cover)
-        
+
         // Add ESC key listener
         const escHandler = (e) => {
             if (e.key === 'Escape') {
@@ -915,7 +1498,7 @@
             }
         }
         document.addEventListener('keydown', escHandler)
-        
+
         // Add backdrop click handler
         cover.addEventListener('click', function(e) {
             // Only close if clicking the backdrop itself, not the popup
@@ -923,7 +1506,7 @@
                 closeModal()
             }
         })
-        
+
         // Trigger animation
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -943,7 +1526,7 @@
             {
             imagePopup.style.opacity = '0'
             imagePopup.style.transform = 'translate(-50%, -50%) scale(0.95)'
-            
+
             // Remove from DOM after animation
             setTimeout(() => {
                 if (imagePopup && imagePopup.parentNode) {
@@ -959,7 +1542,7 @@
             backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0)'
             backdrop.style.backdropFilter = 'blur(0px)'
             backdrop.style.webkitBackdropFilter = 'blur(0px)'
-            
+
             // Remove from DOM after animation
             setTimeout(() => {
                 if (backdrop && backdrop.parentNode) {
@@ -991,19 +1574,55 @@
 
         // Create modal container
         imageViewerModal = document.createElement('div')
+        imageViewerModal.className = 'image-viewer-modal'
         imageViewerModal.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); z-index: 1000001; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; max-width: 95vw; max-height: 95vh;`
         document.body.appendChild(imageViewerModal)
 
         // Create content container for proper positioning
         const contentContainer = document.createElement('div')
+        contentContainer.className = 'image-viewer-content'
         contentContainer.style.cssText = 'position: relative; max-width: 95vw; max-height: 95vh; display: flex; align-items: center; justify-content: center;'
         imageViewerModal.appendChild(contentContainer)
+
+        // Comparison mode state (shared across navigation functions)
+        let isComparisonMode = false
+        const batchImages = findBatchImages(index, imageViewerImages)
+        const isBatch = batchImages.length >= 2
+
+        // Store references for renderComparisonView to access
+        window.hollyShowImageAtIndex = null
+        window.hollyIsComparisonModeRef = { current: isComparisonMode }
+        window.hollyComparisonToggleBtnRef = { current: null }
+        window.hollyComparisonToggleBtnVarRef = { current: null } // Mutable reference to comparisonToggleBtn variable
+        // Store setter to update isComparisonMode from outside
+        window.hollySetComparisonMode = (value) => {
+            isComparisonMode = value
+            window.hollyIsComparisonModeRef.current = value
+        }
+
+        // Create comparison mode toggle (only show if batch exists)
+        // Use object wrapper so it can be updated when navigating to batch
+        const comparisonToggleBtnRef = { current: null }
+        window.hollyComparisonToggleBtnVarRef.current = comparisonToggleBtnRef
 
         // Navigation function
         const showImageAtIndex = (idx) => {
             if (idx < 0 || idx >= imageViewerImages.length) return
             currentImageViewerIndex = idx
-            
+
+            // Check if new image is part of a batch
+            const newBatchImages = findBatchImages(idx, imageViewerImages)
+            const isNewBatch = newBatchImages.length >= 2
+
+            // Update batch images if in comparison mode when navigating
+            if (isComparisonMode) {
+                // Show current image in grid view (even if it's a single image)
+                // For single images, show just that one image in the grid
+                const imagesToShow = isNewBatch ? newBatchImages : [imageViewerImages[idx]]
+                renderComparisonView(true, imagesToShow)
+                window.hollyIsComparisonModeRef.current = isComparisonMode
+            }
+
             // Check if this image is on a different page in the image popup
             const imagePage = Math.floor(idx / pageSize) + 1
             if (imagePage !== currentPage) {
@@ -1011,7 +1630,7 @@
                 displayCurrentPage()
                 updatePaginationControls()
             }
-            
+
             const img = imageViewerModal.querySelector('img')
             const metadata = imageViewerModal.querySelector('.image-metadata')
             const messageDiv = metadata.querySelector('.metadata-message')
@@ -1019,56 +1638,64 @@
             const modelDiv = metadata.querySelector('.metadata-model')
             const leftArrow = document.querySelector('.image-viewer-arrow-left')
             const rightArrow = document.querySelector('.image-viewer-arrow-right')
-            
+
             // Fade out
             img.style.opacity = '0'
             metadata.style.opacity = '0'
-            
+
             setTimeout(() => {
                 img.src = imageViewerImages[idx].url
                 messageDiv.textContent = imageViewerImages[idx].message
                 timestampDiv.textContent = new Date(imageViewerImages[idx].timestamp).toLocaleString()
-                
+
                 if (modelDiv) {
                     modelDiv.textContent = imageViewerImages[idx].model || 'Unknown Model'
                 }
-                
+
                 // Remove old expandable section if it exists
                 const oldExpandToggle = metadata.querySelector('div[style*="cursor: pointer"]')
                 const oldDetailsSection = metadata.querySelector('.metadata-details')
                 if (oldExpandToggle && oldExpandToggle.parentNode === metadata) oldExpandToggle.remove()
                 if (oldDetailsSection) oldDetailsSection.remove()
-                
+
                 // Rebuild expandable section for new image if it has text_to_image data
                 if (imageViewerImages[idx].text_to_image) {
                     const expandToggle = document.createElement('div')
                     expandToggle.style.cssText = `display: flex; align-items: center; justify-content: center; margin-top: 12px; cursor: pointer; user-select: none; padding: 8px; min-width: 40px; min-height: 30px; border-radius: 8px; border: 2px solid ${colorScheme.textSecondary};`
-                    
+
                     const triangle = document.createElement('span')
                     triangle.innerHTML = '▼'
                     triangle.style.cssText = `font-size: 14px; color: ${colorScheme.textSecondary}; transition: transform 0.3s; pointer-events: none;`
                     expandToggle.appendChild(triangle)
-                    
+
                     const detailsSection = document.createElement('div')
                     detailsSection.className = 'metadata-details'
                     detailsSection.style.cssText = `display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; text-align: left; max-height: 300px; overflow-y: auto;`
-                    
+
                     // Build details content
                     let detailsHTML = ''
                     const t2i = imageViewerImages[idx].text_to_image
-                    
+
                     if (t2i.prompt) {
-                        detailsHTML += `<div style="margin-bottom: 12px;"><strong style="color: ${colorScheme.accent};">Prompt:</strong><div style="color: ${colorScheme.textPrimary}; font-size: 11px; line-height: 1.5; margin-top: 4px; word-wrap: break-word;">${t2i.prompt}</div></div>`
+                        detailsHTML += `<div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <strong style="color: ${colorScheme.accent};">Prompt:</strong>
+                                <button class="copy-prompt-btn" data-prompt="${t2i.prompt.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" style="background: ${colorScheme.cardBackground}; color: ${colorScheme.textSecondary}; border: 1px solid ${colorScheme.border}; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; transition: all 0.2s;">
+                                    Copy
+                                </button>
+                            </div>
+                            <div style="color: ${colorScheme.textPrimary}; font-size: 11px; line-height: 1.5; margin-top: 4px; word-wrap: break-word;">${t2i.prompt}</div>
+                        </div>`
                     }
-                    
+
                     if (t2i.negative_prompt) {
                         detailsHTML += `<div style="margin-bottom: 12px;"><strong style="color: ${colorScheme.accent};">Negative Prompt:</strong><div style="color: ${colorScheme.textSecondary}; font-size: 11px; line-height: 1.5; margin-top: 4px; word-wrap: break-word;">${t2i.negative_prompt}</div></div>`
                     }
-                    
+
                     // Technical details in a grid
                     detailsHTML += `<div style="margin-bottom: 8px;"><strong style="color: ${colorScheme.accent};">Generation Settings:</strong></div>`
                     detailsHTML += `<div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 11px;">`
-                    
+
                     if (t2i.width && t2i.height) {
                         detailsHTML += `<span style="color: ${colorScheme.textSecondary};">Size:</span><span style="color: ${colorScheme.textPrimary};">${t2i.width} × ${t2i.height}</span>`
                     }
@@ -1087,11 +1714,60 @@
                     if (t2i.batch_size) {
                         detailsHTML += `<span style="color: ${colorScheme.textSecondary};">Batch Size:</span><span style="color: ${colorScheme.textPrimary};">${t2i.batch_size}</span>`
                     }
-                    
+
                     detailsHTML += `</div>`
-                    
+
                     detailsSection.innerHTML = detailsHTML
-                    
+
+                    // Add copy button functionality
+                    const copyBtn = detailsSection.querySelector('.copy-prompt-btn')
+                    if (copyBtn) {
+                        copyBtn.addEventListener('click', async function(e) {
+                            e.stopPropagation()
+                            let prompt = this.getAttribute('data-prompt')
+                            if (prompt) {
+                                // Decode HTML entities
+                                const textarea = document.createElement('textarea')
+                                textarea.innerHTML = prompt
+                                prompt = textarea.value
+                                try {
+                                    await navigator.clipboard.writeText(prompt)
+                                    const originalText = this.textContent
+                                    this.textContent = 'Copied!'
+                                    this.style.color = colorScheme.accent
+                                    this.style.borderColor = colorScheme.accent
+                                    setTimeout(() => {
+                                        this.textContent = originalText
+                                        this.style.color = colorScheme.textSecondary
+                                        this.style.borderColor = colorScheme.border
+                                    }, 2000)
+                                } catch (err) {
+                                    console.error('Failed to copy prompt:', err)
+                                    // Fallback for older browsers
+                                    const textarea = document.createElement('textarea')
+                                    textarea.value = prompt
+                                    textarea.style.position = 'fixed'
+                                    textarea.style.opacity = '0'
+                                    document.body.appendChild(textarea)
+                                    textarea.select()
+                                    try {
+                                        document.execCommand('copy')
+                                        const originalText = this.textContent
+                                        this.textContent = 'Copied!'
+                                        this.style.color = colorScheme.accent
+                                        setTimeout(() => {
+                                            this.textContent = originalText
+                                            this.style.color = colorScheme.textSecondary
+                                        }, 2000)
+                                    } catch (fallbackErr) {
+                                        console.error('Fallback copy failed:', fallbackErr)
+                                    }
+                                    document.body.removeChild(textarea)
+                                }
+                            }
+                        })
+                    }
+
                     // Toggle functionality
                     let isExpanded = false
                     expandToggle.addEventListener('click', function(e) {
@@ -1105,15 +1781,15 @@
                             triangle.style.transform = 'rotate(0deg)'
                         }
                     })
-                    
+
                     metadata.appendChild(expandToggle)
                     metadata.appendChild(detailsSection)
                 }
-                
+
                 // Fade in
                 img.style.opacity = '1'
                 metadata.style.opacity = '1'
-                
+
                 // Update arrow visibility
                 leftArrow.style.opacity = idx === 0 ? '0.3' : '1'
                 rightArrow.style.opacity = idx === imageViewerImages.length - 1 ? '0.3' : '1'
@@ -1124,10 +1800,47 @@
         let navLocked = false
         const navigate = (delta) => {
             if (navLocked) return
-            const next = currentImageViewerIndex + delta
-            if (next < 0 || next >= imageViewerImages.length) return
+
+            let targetIndex
+            if (isComparisonMode) {
+                // Navigate by batches when in comparison mode
+                const currentBatch = findBatchImages(currentImageViewerIndex, imageViewerImages)
+                const currentBatchStart = imageViewerImages.findIndex(img => img.url === currentBatch[0].url)
+                const currentBatchEnd = imageViewerImages.findIndex(img => img.url === currentBatch[currentBatch.length - 1].url)
+
+                if (delta > 0) {
+                    // Going forward - jump to first image of next batch
+                    targetIndex = currentBatchEnd + 1
+                    // Find the next batch starting from targetIndex
+                    if (targetIndex < imageViewerImages.length) {
+                        const nextBatch = findBatchImages(targetIndex, imageViewerImages)
+                        if (nextBatch.length >= 2) {
+                            // Next batch found, use its first image
+                            targetIndex = imageViewerImages.findIndex(img => img.url === nextBatch[0].url)
+                        }
+                        // If no batch found, just use targetIndex (single image)
+                    }
+                } else {
+                    // Going backward - jump to first image of previous batch
+                    targetIndex = currentBatchStart - 1
+                    if (targetIndex >= 0) {
+                        // Find what batch the previous image belongs to
+                        const prevBatch = findBatchImages(targetIndex, imageViewerImages)
+                        if (prevBatch.length >= 2) {
+                            // Previous image is part of a batch, use first image of that batch
+                            targetIndex = imageViewerImages.findIndex(img => img.url === prevBatch[0].url)
+                        }
+                        // If prevBatch is single image (length 1), just use targetIndex
+                    }
+                }
+            } else {
+                // Normal single-image navigation
+                targetIndex = currentImageViewerIndex + delta
+            }
+
+            if (targetIndex < 0 || targetIndex >= imageViewerImages.length) return
             navLocked = true
-            showImageAtIndex(next)
+            showImageAtIndex(targetIndex)
             setTimeout(() => { navLocked = false }, 180)
         }
 
@@ -1147,27 +1860,101 @@
             this.style.transform = 'scale(1)'
         })
 
+        // Create comparison mode toggle (always show)
+        const comparisonToggleBtn = document.createElement('button')
+        comparisonToggleBtn.setAttribute('type', 'button')
+        comparisonToggleBtn.setAttribute('data-prevent-progress', 'true')
+
+        // Create the icon container div
+        const iconContainer = document.createElement('div')
+        iconContainer.style.cssText = `display: flex; height: 64px; width: 64px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 12px; border: 2px solid ${colorScheme.border}; background: ${colorScheme.cardBackground}; color: ${colorScheme.textPrimary};`
+
+        // Grid view SVG icon
+        const gridIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        gridIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+        gridIcon.setAttribute('fill', 'none')
+        gridIcon.setAttribute('viewBox', '0 0 24 24')
+        gridIcon.setAttribute('stroke-width', '1.5')
+        gridIcon.setAttribute('stroke', 'currentColor')
+        gridIcon.setAttribute('aria-hidden', 'true')
+        gridIcon.setAttribute('data-slot', 'icon')
+        gridIcon.style.cssText = 'height: 24px; width: 24px;'
+
+        const gridPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        gridPath.setAttribute('stroke-linecap', 'round')
+        gridPath.setAttribute('stroke-linejoin', 'round')
+        gridPath.setAttribute('d', 'M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z')
+
+        gridIcon.appendChild(gridPath)
+        iconContainer.appendChild(gridIcon)
+        comparisonToggleBtn.appendChild(iconContainer)
+
+        comparisonToggleBtn.style.cssText = `position: fixed; top: 20px; left: 20px; cursor: pointer; z-index: 1000002; padding: 0; border: none; background: transparent; transition: all 0.2s;`
+
+        comparisonToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation()
+            isComparisonMode = !isComparisonMode
+            window.hollyIsComparisonModeRef.current = isComparisonMode
+            // Get current batch images for this image (works for both single and batch)
+            const currentIdx = currentImageViewerIndex
+            const currentBatch = findBatchImages(currentIdx, imageViewerImages)
+            // If single image, show it in grid view too
+            const imagesToShow = currentBatch.length >= 2 ? currentBatch : [imageViewerImages[currentIdx]]
+            renderComparisonView(isComparisonMode, imagesToShow)
+
+            // Update icon based on mode (grid icon for grid view, single square icon for single view)
+            if (isComparisonMode) {
+                // Single view icon (single square representing one image)
+                gridPath.setAttribute('d', 'M3.75 4.5A2.25 2.25 0 0 0 1.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25h16.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H3.75Z')
+            } else {
+                // Grid view icon (original 2x2 grid)
+                gridPath.setAttribute('d', 'M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z')
+            }
+        })
+
+        comparisonToggleBtn.addEventListener('mouseenter', function() {
+            iconContainer.style.backgroundColor = colorScheme.hoverBackground
+            iconContainer.style.color = colorScheme.hoverText
+            iconContainer.style.borderColor = colorScheme.hoverText
+        })
+        comparisonToggleBtn.addEventListener('mouseleave', function() {
+            iconContainer.style.backgroundColor = colorScheme.cardBackground
+            iconContainer.style.color = colorScheme.textPrimary
+            iconContainer.style.borderColor = colorScheme.border
+        })
+
+        // Store reference to toggle button
+        comparisonToggleBtnRef.current = comparisonToggleBtn
+        window.hollyComparisonToggleBtnRef.current = comparisonToggleBtn
+        window.hollyComparisonToggleBtnVarRef.current = comparisonToggleBtnRef
+
+        document.body.appendChild(comparisonToggleBtn)
+
+        // Store showImageAtIndex reference after it's fully defined
+        window.hollyShowImageAtIndex = showImageAtIndex
+
         // Create metadata toggle container
         const metadataToggleContainer = document.createElement('div')
+        metadataToggleContainer.id = 'holly-metadata-toggle-container'
         metadataToggleContainer.style.cssText = `position: fixed; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 12px; z-index: 1000002;`
-        
+
         // Create toggle switch
         const toggleSwitch = document.createElement('div')
         toggleSwitch.style.cssText = `width: 48px; height: 26px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; border-radius: 13px; position: relative; cursor: pointer; transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);`
-        
+
         const toggleSlider = document.createElement('div')
         toggleSlider.style.cssText = `width: 20px; height: 20px; background: ${colorScheme.textSecondary}; border-radius: 50%; position: absolute; top: 1px; left: 2px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.4);`
-        
+
         toggleSwitch.appendChild(toggleSlider)
-        
+
         // Create label
         const toggleLabel = document.createElement('span')
         toggleLabel.textContent = 'Metadata'
         toggleLabel.style.cssText = `color: ${colorScheme.textSecondary}; font-size: 14px; font-weight: 500; cursor: pointer; user-select: none;`
-        
+
         // Track toggle state - load from localStorage or default to false
         let isMetadataVisible = localStorage.getItem('hollyMetadataVisible') === 'true'
-        
+
         // Toggle function
         const toggleMetadata = () => {
             const metadata = imageViewerModal.querySelector('.image-metadata')
@@ -1175,7 +1962,7 @@
                 isMetadataVisible = !isMetadataVisible
                 // Save preference to localStorage
                 localStorage.setItem('hollyMetadataVisible', isMetadataVisible)
-                
+
                 if (isMetadataVisible) {
                     metadata.style.display = 'block'
                     metadata.style.opacity = '1'
@@ -1192,11 +1979,11 @@
                 }
             }
         }
-        
+
         // Add click listeners
         toggleSwitch.addEventListener('click', toggleMetadata)
         toggleLabel.addEventListener('click', toggleMetadata)
-        
+
         // Initialize based on saved preference
         if (isMetadataVisible) {
             toggleSwitch.style.background = colorScheme.gradient
@@ -1209,7 +1996,7 @@
             toggleSlider.style.background = colorScheme.textSecondary
             toggleLabel.style.color = colorScheme.textPrimary
         }
-        
+
         metadataToggleContainer.appendChild(toggleSwitch)
         metadataToggleContainer.appendChild(toggleLabel)
 
@@ -1220,14 +2007,14 @@
         downloadBtn.addEventListener('click', function() {
             const currentImage = imageViewerImages[currentImageViewerIndex]
             const filename = currentImage.message.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '_' + new Date(currentImage.timestamp).toISOString().split('T')[0] + '.jpg'
-            
+
             // Check if this is a CORS-protected image (character photos or background photos)
             const isCorsProtected = currentImage.source && (
                 currentImage.source.includes('character.photos.background') ||
                 currentImage.source.includes('character.photos.foreground') ||
                 currentImage.url.includes('characterphotos')
             )
-            
+
             if (isCorsProtected) {
                 // For CORS-protected images, open in new tab for manual download
                 console.log('Opening CORS-protected image in new tab:', filename)
@@ -1310,7 +2097,7 @@
         const img = document.createElement('img')
         img.src = imageData.url
         img.style.cssText = 'max-width: 95vw; max-height: 95vh; object-fit: contain; border-radius: 8px; transition: opacity 0.15s;'
-        
+
         // Add metadata below image
         const metadata = document.createElement('div')
         metadata.className = 'image-metadata'
@@ -1318,56 +2105,64 @@
         const savedMetadataVisible = localStorage.getItem('hollyMetadataVisible') === 'true'
         const initialDisplay = savedMetadataVisible ? 'block' : 'none'
         metadata.style.cssText = `position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: ${colorScheme.cardBackground}; color: ${colorScheme.textPrimary}; padding: 12px 20px; border-radius: 8px; border: 1px solid ${colorScheme.border}; font-size: 14px; max-width: 80vw; text-align: center; transition: opacity 0.15s; display: ${initialDisplay};`
-        
+
         const message = document.createElement('div')
         message.className = 'metadata-message'
         message.style.cssText = `margin-bottom: 8px; font-weight: 500; color: ${colorScheme.textPrimary};`
         message.textContent = imageData.message
-        
+
         const timestamp = document.createElement('div')
         timestamp.className = 'metadata-timestamp'
         timestamp.style.cssText = `font-size: 12px; color: ${colorScheme.textSecondary};`
         timestamp.textContent = new Date(imageData.timestamp).toLocaleString()
-        
+
         const model = document.createElement('div')
         model.className = 'metadata-model'
         model.style.cssText = `font-size: 12px; color: ${colorScheme.accent}; margin-top: 4px;`
         model.textContent = imageData.model || 'Unknown Model'
-        
+
         metadata.appendChild(message)
         metadata.appendChild(timestamp)
         metadata.appendChild(model)
-        
+
         // Add expandable details section if we have text_to_image data
         if (imageData.text_to_image) {
             const expandToggle = document.createElement('div')
             expandToggle.style.cssText = `display: flex; align-items: center; justify-content: center; margin-top: 12px; cursor: pointer; user-select: none; padding: 8px; min-width: 40px; min-height: 30px; border-radius: 8px; border: 2px solid ${colorScheme.textSecondary};`
-            
+
             const triangle = document.createElement('span')
             triangle.innerHTML = '▼'
             triangle.style.cssText = `font-size: 14px; color: ${colorScheme.textSecondary}; transition: transform 0.3s; pointer-events: none;`
             expandToggle.appendChild(triangle)
-            
+
             const detailsSection = document.createElement('div')
             detailsSection.className = 'metadata-details'
             detailsSection.style.cssText = `display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; text-align: left; max-height: 300px; overflow-y: auto;`
-            
+
             // Build details content
             let detailsHTML = ''
             const t2i = imageData.text_to_image
-            
+
             if (t2i.prompt) {
-                detailsHTML += `<div style="margin-bottom: 12px;"><strong style="color: ${colorScheme.accent};">Prompt:</strong><div style="color: ${colorScheme.textPrimary}; font-size: 11px; line-height: 1.5; margin-top: 4px; word-wrap: break-word;">${t2i.prompt}</div></div>`
+                detailsHTML += `<div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <strong style="color: ${colorScheme.accent};">Prompt:</strong>
+                        <button class="copy-prompt-btn" data-prompt="${t2i.prompt.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" style="background: ${colorScheme.cardBackground}; color: ${colorScheme.textSecondary}; border: 1px solid ${colorScheme.border}; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; transition: all 0.2s;">
+                            Copy
+                        </button>
+                    </div>
+                    <div style="color: ${colorScheme.textPrimary}; font-size: 11px; line-height: 1.5; margin-top: 4px; word-wrap: break-word;">${t2i.prompt}</div>
+                </div>`
             }
-            
+
             if (t2i.negative_prompt) {
                 detailsHTML += `<div style="margin-bottom: 12px;"><strong style="color: ${colorScheme.accent};">Negative Prompt:</strong><div style="color: ${colorScheme.textSecondary}; font-size: 11px; line-height: 1.5; margin-top: 4px; word-wrap: break-word;">${t2i.negative_prompt}</div></div>`
             }
-            
+
             // Technical details in a grid
             detailsHTML += `<div style="margin-bottom: 8px;"><strong style="color: ${colorScheme.accent};">Generation Settings:</strong></div>`
             detailsHTML += `<div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 11px;">`
-            
+
             if (t2i.width && t2i.height) {
                 detailsHTML += `<span style="color: ${colorScheme.textSecondary};">Size:</span><span style="color: ${colorScheme.textPrimary};">${t2i.width} × ${t2i.height}</span>`
             }
@@ -1386,11 +2181,60 @@
             if (t2i.batch_size) {
                 detailsHTML += `<span style="color: ${colorScheme.textSecondary};">Batch Size:</span><span style="color: ${colorScheme.textPrimary};">${t2i.batch_size}</span>`
             }
-            
+
             detailsHTML += `</div>`
-            
+
             detailsSection.innerHTML = detailsHTML
-            
+
+            // Add copy button functionality
+            const copyBtn = detailsSection.querySelector('.copy-prompt-btn')
+            if (copyBtn) {
+                copyBtn.addEventListener('click', async function(e) {
+                    e.stopPropagation()
+                    let prompt = this.getAttribute('data-prompt')
+                    if (prompt) {
+                        // Decode HTML entities
+                        const textarea = document.createElement('textarea')
+                        textarea.innerHTML = prompt
+                        prompt = textarea.value
+                        try {
+                            await navigator.clipboard.writeText(prompt)
+                            const originalText = this.textContent
+                            this.textContent = 'Copied!'
+                            this.style.color = colorScheme.accent
+                            this.style.borderColor = colorScheme.accent
+                            setTimeout(() => {
+                                this.textContent = originalText
+                                this.style.color = colorScheme.textSecondary
+                                this.style.borderColor = colorScheme.border
+                            }, 2000)
+                        } catch (err) {
+                            console.error('Failed to copy prompt:', err)
+                            // Fallback for older browsers
+                            const textarea = document.createElement('textarea')
+                            textarea.value = prompt
+                            textarea.style.position = 'fixed'
+                            textarea.style.opacity = '0'
+                            document.body.appendChild(textarea)
+                            textarea.select()
+                            try {
+                                document.execCommand('copy')
+                                const originalText = this.textContent
+                                this.textContent = 'Copied!'
+                                this.style.color = colorScheme.accent
+                                setTimeout(() => {
+                                    this.textContent = originalText
+                                    this.style.color = colorScheme.textSecondary
+                                }, 2000)
+                            } catch (fallbackErr) {
+                                console.error('Fallback copy failed:', fallbackErr)
+                            }
+                            document.body.removeChild(textarea)
+                        }
+                    }
+                })
+            }
+
             // Toggle functionality
             let isExpanded = false
             expandToggle.addEventListener('click', function(e) {
@@ -1404,7 +2248,7 @@
                     triangle.style.transform = 'rotate(0deg)'
                 }
             })
-            
+
             metadata.appendChild(expandToggle)
             metadata.appendChild(detailsSection)
         }
@@ -1420,17 +2264,87 @@
                     document.removeEventListener('keydown', keyHandler, true)
                     window.hollyImageViewerKeyHandler = null
                 }
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault()
-                navigate(-1)
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault()
-                navigate(1)
+            } else {
+                // Allow arrow key navigation (will update batch if in comparison mode)
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault()
+                    navigate(-1)
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault()
+                    navigate(1)
+                }
             }
         }
         // Use capture phase so this handler fires before the popup's handler
         document.addEventListener('keydown', keyHandler, true)
         window.hollyImageViewerKeyHandler = keyHandler
+
+        // Add swipe gesture support for mobile
+        let touchStartX = null
+        let touchStartY = null
+        let touchEndX = null
+        let touchEndY = null
+        const minSwipeDistance = 50 // Minimum distance in pixels to register a swipe
+        const maxVerticalDistance = 100 // Maximum vertical movement allowed for horizontal swipe
+
+        const handleTouchStart = (e) => {
+            const touch = e.touches[0]
+            touchStartX = touch.clientX
+            touchStartY = touch.clientY
+        }
+
+        const handleTouchMove = (e) => {
+            // Prevent default scrolling while touching image viewer
+            if (imageViewerModal && imageViewerModal.parentNode) {
+                e.preventDefault()
+            }
+        }
+
+        const handleTouchEnd = (e) => {
+            if (!touchStartX || !touchStartY) return
+
+            const touch = e.changedTouches[0]
+            touchEndX = touch.clientX
+            touchEndY = touch.clientY
+
+            const deltaX = touchEndX - touchStartX
+            const deltaY = touchEndY - touchStartY
+            const absDeltaX = Math.abs(deltaX)
+            const absDeltaY = Math.abs(deltaY)
+
+            // Reset touch positions
+            touchStartX = null
+            touchStartY = null
+            touchEndX = null
+            touchEndY = null
+
+            // Only register horizontal swipe if:
+            // 1. Horizontal movement is greater than minimum distance
+            // 2. Horizontal movement is greater than vertical movement (mostly horizontal)
+            // 3. Vertical movement is not too large (prevents accidental swipes during scrolling)
+            if (absDeltaX > minSwipeDistance && absDeltaX > absDeltaY && absDeltaY < maxVerticalDistance) {
+                if (deltaX > 0) {
+                    // Swipe right - go to previous image
+                    navigate(-1)
+                } else {
+                    // Swipe left - go to next image
+                    navigate(1)
+                }
+            }
+        }
+
+        // Add touch event listeners to content container (works for both single and comparison view)
+        contentContainer.addEventListener('touchstart', handleTouchStart, { passive: false })
+        contentContainer.addEventListener('touchmove', handleTouchMove, { passive: false })
+        contentContainer.addEventListener('touchend', handleTouchEnd, { passive: true })
+
+        // Store handlers for cleanup
+        window.hollyImageViewerTouchHandlers = {
+            start: handleTouchStart,
+            move: handleTouchMove,
+            end: handleTouchEnd,
+            container: contentContainer
+        }
 
         contentContainer.appendChild(img)
         contentContainer.appendChild(metadata)
@@ -1452,6 +2366,254 @@
         })
     }
 
+    // Function to render comparison view (2x2 grid)
+    function renderComparisonView(enabled, batchImages) {
+        const contentContainer = imageViewerModal.querySelector('div')
+        if (!contentContainer) return
+
+        // Remove existing comparison grid if present
+        const existingGrid = contentContainer.querySelector('.comparison-grid')
+        if (existingGrid) existingGrid.remove()
+
+        // Hide/show single image view
+        const singleImg = contentContainer.querySelector('img')
+        const metadata = contentContainer.querySelector('.image-metadata')
+
+        // Find metadata toggle container and download button using stored references
+        const metadataToggle = document.getElementById('holly-metadata-toggle-container')
+
+        // Find download button more reliably
+        let downloadButton = null
+        const allButtons = document.querySelectorAll('button')
+        for (let btn of allButtons) {
+            if (btn.textContent === 'Download' && btn.style.position === 'fixed' && btn.style.bottom === '20px') {
+                downloadButton = btn
+                break
+            }
+        }
+
+        if (enabled) {
+            // Hide single image, metadata, metadata toggle, and download button
+            if (singleImg) singleImg.style.display = 'none'
+            if (metadata) metadata.style.display = 'none'
+            if (metadataToggle) metadataToggle.style.display = 'none'
+            if (downloadButton) downloadButton.style.display = 'none'
+
+            // Create grid container
+            const grid = document.createElement('div')
+            grid.className = 'comparison-grid'
+            // Always use 2 columns - single images will be centered
+            const numImages = batchImages.length
+            const gridCols = 'repeat(2, 1fr)'
+            grid.style.cssText = `display: grid; grid-template-columns: ${gridCols}; grid-template-rows: 1fr; gap: 16px; width: 95vw; max-width: 1400px; height: 90vh; max-height: 90vh; padding: 20px; box-sizing: border-box; align-items: stretch; justify-items: stretch;`
+
+            // Add mobile-specific class for responsive styling (only for 2 images)
+            if (numImages === 2) {
+                grid.classList.add('comparison-grid-2')
+            }
+
+            // Add class for single image grids
+            if (numImages === 1) {
+                grid.classList.add('comparison-grid-single')
+            }
+
+            // Add desktop and mobile responsive styles if not already added
+            if (!document.getElementById('comparison-grid-mobile-style')) {
+                const mobileStyle = document.createElement('style')
+                mobileStyle.id = 'comparison-grid-mobile-style'
+                mobileStyle.textContent = `
+                    /* Desktop styles for grid items */
+                    @media (min-width: 769px) {
+                        .comparison-grid > div {
+                            width: 100% !important;
+                            height: 100% !important;
+                            min-height: 0 !important;
+                        }
+                        /* Center single image and make it same size as one grid cell */
+                        .comparison-grid-single > div {
+                            grid-column: 1 / -1 !important;
+                            justify-self: center !important;
+                            width: calc((100% - 16px) / 2) !important;
+                            max-width: calc((100% - 16px) / 2) !important;
+                        }
+                    }
+                    @media (max-width: 768px) {
+                        /* Single image in grid view - full width, half height, centered */
+                        .comparison-grid-single {
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            max-width: 100vw !important;
+                            max-height: 100vh !important;
+                            padding: 12px !important;
+                            box-sizing: border-box !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                        }
+                        .comparison-grid-single > div {
+                            grid-column: 1 / -1 !important;
+                            width: calc(100vw - 24px) !important;
+                            max-width: calc(100vw - 24px) !important;
+                            height: 50vh !important;
+                            max-height: 50vh !important;
+                            padding: 0 !important;
+                        }
+                        .comparison-grid-single img {
+                            width: 100% !important;
+                            height: 100% !important;
+                            object-fit: cover !important;
+                        }
+                        /* Two images in grid view */
+                        .comparison-grid-2 {
+                            grid-template-columns: 1fr !important;
+                            grid-template-rows: 1fr 1fr !important;
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            max-width: 100vw !important;
+                            max-height: 100vh !important;
+                            padding: 12px !important;
+                            gap: 12px !important;
+                            position: relative !important;
+                            top: 0 !important;
+                            left: 0 !important;
+                            z-index: 1000001 !important;
+                            box-sizing: border-box !important;
+                        }
+                        .comparison-grid-2 > div {
+                            width: 100% !important;
+                            height: 100% !important;
+                            max-height: calc(50vh - 18px) !important;
+                            padding: 0 !important;
+                        }
+                        .comparison-grid-2 img {
+                            width: 100% !important;
+                            height: 100% !important;
+                            object-fit: cover !important;
+                        }
+                    }
+                `
+                document.head.appendChild(mobileStyle)
+            }
+
+            // Add each batch image to grid
+            batchImages.forEach((imgData, idx) => {
+                const imgContainer = document.createElement('div')
+                imgContainer.style.cssText = `position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: ${colorScheme.cardBackground}; border-radius: 8px; padding: 0; border: 1px solid ${colorScheme.border}; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;`
+
+                const img = document.createElement('img')
+                img.src = imgData.url
+                img.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: block;`
+
+                // Add hover effect
+                imgContainer.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05)'
+                    this.style.boxShadow = `0 4px 12px ${colorScheme.glowColor}`
+                })
+                imgContainer.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)'
+                    this.style.boxShadow = 'none'
+                })
+
+                // Click handler to switch to single view of this image
+                imgContainer.addEventListener('click', function() {
+                    // Find the index of this image in imageViewerImages
+                    const targetIndex = imageViewerImages.findIndex(img => img.url === imgData.url)
+                    if (targetIndex !== -1 && window.hollyShowImageAtIndex && window.hollySetComparisonMode) {
+                        // Exit comparison mode first
+                        window.hollySetComparisonMode(false)
+
+                        // Explicitly exit grid view
+                        renderComparisonView(false, [])
+
+                        // Navigate to this image (this will update the view)
+                        window.hollyShowImageAtIndex(targetIndex)
+
+                        // Update toggle button icon if it exists
+                        if (window.hollyComparisonToggleBtnRef && window.hollyComparisonToggleBtnRef.current) {
+                            const toggleBtn = window.hollyComparisonToggleBtnRef.current
+                            const gridPath = toggleBtn.querySelector('path')
+                            if (gridPath) {
+                                gridPath.setAttribute('d', 'M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z')
+                            }
+                        }
+                    }
+                })
+
+                imgContainer.appendChild(img)
+
+                grid.appendChild(imgContainer)
+            })
+
+            contentContainer.appendChild(grid)
+        } else {
+            // Show single image and metadata
+            if (singleImg) singleImg.style.display = 'block'
+            if (metadata) {
+                const savedMetadataVisible = localStorage.getItem('hollyMetadataVisible') === 'true'
+                metadata.style.display = savedMetadataVisible ? 'block' : 'none'
+            }
+            if (metadataToggle) metadataToggle.style.display = 'flex'
+            if (downloadButton) downloadButton.style.display = 'block'
+        }
+    }
+
+    // Helper function to find batch images (images from the same generation)
+    function findBatchImages(currentIndex, images) {
+        if (currentIndex < 0 || currentIndex >= images.length) return []
+
+        const current = images[currentIndex]
+        if (!current.text_to_image) return [current] // Not a generated image, return single
+
+        // Use seed, prompt, and timestamp to identify batch images
+        const batch = [current]
+        const currentTimestamp = new Date(current.timestamp).getTime()
+        const currentPrompt = current.text_to_image.prompt || ''
+        const currentSeed = current.text_to_image.seed
+
+        // Check images before current (they should be in chronological order)
+        for (let i = currentIndex - 1; i >= 0; i--) {
+            const img = images[i]
+            if (!img.text_to_image) break
+
+            const imgTimestamp = new Date(img.timestamp).getTime()
+            const timeDiff = Math.abs(currentTimestamp - imgTimestamp)
+
+            // Same prompt and seed (or just timestamp very close) = same batch
+            const samePrompt = img.text_to_image.prompt === currentPrompt
+            const sameSeed = currentSeed !== undefined && img.text_to_image.seed === currentSeed
+            const closeTimestamp = timeDiff <= 2000 // Within 2 seconds
+
+            if ((samePrompt && (sameSeed || closeTimestamp)) || (closeTimestamp && samePrompt)) {
+                batch.unshift(img) // Add to beginning
+            } else {
+                break
+            }
+        }
+
+        // Check images after current
+        for (let i = currentIndex + 1; i < images.length; i++) {
+            const img = images[i]
+            if (!img.text_to_image) break
+
+            const imgTimestamp = new Date(img.timestamp).getTime()
+            const timeDiff = Math.abs(currentTimestamp - imgTimestamp)
+
+            // Same prompt and seed (or just timestamp very close) = same batch
+            const samePrompt = img.text_to_image.prompt === currentPrompt
+            const sameSeed = currentSeed !== undefined && img.text_to_image.seed === currentSeed
+            const closeTimestamp = timeDiff <= 2000 // Within 2 seconds
+
+            if ((samePrompt && (sameSeed || closeTimestamp)) || (closeTimestamp && samePrompt)) {
+                batch.push(img)
+            } else {
+                break
+            }
+        }
+
+        // Only return batch if exactly 2 images
+        return batch.length === 2 ? batch : [current]
+    }
+
     function closeImageViewer() {
         // Remove keydown handler to prevent event stacking
         if (window.hollyImageViewerKeyHandler) {
@@ -1459,10 +2621,21 @@
             window.hollyImageViewerKeyHandler = null
         }
 
+        // Remove touch handlers to prevent event stacking
+        if (window.hollyImageViewerTouchHandlers) {
+            const handlers = window.hollyImageViewerTouchHandlers
+            if (handlers.container) {
+                handlers.container.removeEventListener('touchstart', handlers.start)
+                handlers.container.removeEventListener('touchmove', handlers.move)
+                handlers.container.removeEventListener('touchend', handlers.end)
+            }
+            window.hollyImageViewerTouchHandlers = null
+        }
+
         if (imageViewerModal) {
             imageViewerModal.style.opacity = '0'
             imageViewerModal.style.transform = 'translate(-50%, -50%) scale(0.9)'
-            
+
             // Remove backdrop
             const backdrop = document.querySelector('div[style*="z-index: 1000000"]')
             if (backdrop) {
@@ -1470,11 +2643,11 @@
                 backdrop.style.backdropFilter = 'blur(0px)'
                 backdrop.style.webkitBackdropFilter = 'blur(0px)'
             }
-            
+
             // Remove all buttons and controls
             const controls = document.querySelectorAll('[style*="z-index: 1000002"]')
             controls.forEach(ctrl => ctrl.style.opacity = '0')
-            
+
             setTimeout(() => {
                 if (imageViewerModal && imageViewerModal.parentNode) {
                     imageViewerModal.parentNode.removeChild(imageViewerModal)
@@ -1524,30 +2697,45 @@
         const endIndex = Math.min(startIndex + pageSize, filteredImages.length)
         const pageImages = filteredImages.slice(startIndex, endIndex)
 
+        // Always use uniform card dimensions regardless of image count
+        const cardWidth = 'clamp(150px, calc(50% - 8px), 220px)' // Fixed uniform width
+        const cardHeight = '280px' // Fixed uniform height for all cards
+        const imageHeight = '200px' // Fixed height for image area within card
+
+        // Ensure grid maintains consistent layout (center when few images, but same sizing)
+        if (pageImages.length <= 2) {
+            grid.style.justifyContent = 'center'
+        } else {
+            grid.style.justifyContent = 'flex-start'
+        }
+        grid.style.alignItems = 'flex-start'
+
         // Rebuild grid content for current page
         let gridContent = ''
         for (let i = 0; i < pageImages.length; i++) {
             const img = pageImages[i]
             const isCharacterPhoto = img.source && (img.source.includes('character.photos.background') || img.source.includes('character.photos.foreground'))
             const checkboxHtml = isCharacterPhoto ? '' : `<input type="checkbox" class="image-checkbox" data-url="${img.url}" data-filename="${img.message.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}_${new Date(img.timestamp).toISOString().split('T')[0]}.jpg" style="position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; cursor: pointer; z-index: 10;">`
-            
+
             // Create a unique data attribute to identify this image
             const imageIndex = startIndex + i
-            
+
             gridContent += `
-                <div style="background: ${colorScheme.cardBackground}; border-radius: 8px; padding: clamp(8px, 2vw, 12px); border: 1px solid ${colorScheme.border}; transition: transform 0.2s, box-shadow 0.2s; max-height: 300px; width: clamp(150px, calc(50% - 8px), 220px); flex-shrink: 0; position: relative;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px ${colorScheme.glowColor}'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <div style="background: ${colorScheme.cardBackground}; border-radius: 8px; padding: clamp(8px, 2vw, 12px); border: 1px solid ${colorScheme.border}; transition: transform 0.2s, box-shadow 0.2s; height: ${cardHeight}; width: ${cardWidth}; flex-shrink: 0; position: relative; display: flex; flex-direction: column;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px ${colorScheme.glowColor}'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
                     ${checkboxHtml}
-                    <img src="${img.url}" class="grid-image" data-image-index="${imageIndex}" style="width: 100%; height: clamp(120px, 25vw, 200px); object-fit: cover; border-radius: 6px; margin-bottom: clamp(4px, 1vw, 8px); cursor: pointer; border: 1px solid ${colorScheme.border};" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                    <div style="display: none; background: ${colorScheme.border}; color: ${colorScheme.textSecondary}; text-align: center; padding: 20px; border-radius: 6px; margin-bottom: 8px;">Image failed to load</div>
-                    <div style="color: ${colorScheme.textSecondary}; font-size: clamp(9px, 2vw, 11px); margin-bottom: clamp(3px, 0.75vw, 6px);">${new Date(img.timestamp).toLocaleString()}</div>
-                    <div style="color: ${colorScheme.textPrimary}; font-size: clamp(10px, 2.5vw, 12px); margin-bottom: clamp(3px, 0.75vw, 6px); line-height: 1.4; max-height: 40px; overflow: hidden; text-overflow: ellipsis;">${img.message}</div>
-                    ${img.model ? `<div style="color: ${colorScheme.accent}; font-size: clamp(9px, 2vw, 11px); margin-bottom: clamp(2px, 0.5vw, 4px); font-weight: 500;">${img.model}</div>` : ''}
+                    <div style="width: 100%; height: ${imageHeight}; overflow: hidden; border-radius: 6px; margin-bottom: clamp(4px, 1vw, 8px); position: relative; flex-shrink: 0;">
+                        <img src="${img.url}" class="grid-image" data-image-index="${imageIndex}" style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; border: 1px solid ${colorScheme.border};" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                        <div style="display: none; background: ${colorScheme.border}; color: ${colorScheme.textSecondary}; text-align: center; padding: 20px; border-radius: 6px;">Image failed to load</div>
+                    </div>
+                    <div style="color: ${colorScheme.textSecondary}; font-size: clamp(9px, 2vw, 11px); margin-bottom: clamp(3px, 0.75vw, 6px); flex-shrink: 0;">${new Date(img.timestamp).toLocaleString()}</div>
+                    <div style="color: ${colorScheme.textPrimary}; font-size: clamp(10px, 2.5vw, 12px); margin-bottom: clamp(3px, 0.75vw, 6px); line-height: 1.4; max-height: 40px; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;">${img.message}</div>
+                    ${img.model ? `<div style="color: ${colorScheme.accent}; font-size: clamp(9px, 2vw, 11px); margin-bottom: clamp(2px, 0.5vw, 4px); font-weight: 500; flex-shrink: 0;">${img.model}</div>` : ''}
                 </div>
             `
         }
 
         grid.innerHTML = gridContent
-        
+
         // Add click handlers for images
         const gridImages = grid.querySelectorAll('.grid-image')
         gridImages.forEach(img => {
@@ -1587,7 +2775,7 @@
         if (pageJumpSelect) {
             // Clear existing options
             pageJumpSelect.innerHTML = ''
-            
+
             // Add options for each page
             for (let i = 1; i <= totalPages; i++) {
                 const option = document.createElement('option')
@@ -1722,7 +2910,7 @@
                     if (key === 'output_image_url') {
                         continue
                     }
-                    
+
                     if (typeof value === 'string' && value.startsWith('http') && value.includes('.jpg')) {
                         console.log(`Found potential image URL in field '${key}':`, value)
                         // Check if this is different from the primary image and not a thumbnail
@@ -1739,7 +2927,7 @@
                         // Also check if this URL matches the primary output_image_url
                         const urlNormalized = value.split('?')[0]
                         const primaryUrlNormalized = msg.text_to_image.output_image_url ? msg.text_to_image.output_image_url.split('?')[0] : ''
-                        
+
                         if (urlNormalized !== primaryUrlNormalized && !isThumbnail) {
                             console.log(`This is a different full-size image from the primary!`)
                             chatImages.push({
@@ -2050,20 +3238,20 @@
                 const downloadSelectedBtn = imagePopup.querySelector('#download-selected-btn')
                 if (downloadSelectedBtn) {
                     // Add hover effects
-                    downloadSelectedBtn.addEventListener('mouseenter', function() { 
+                    downloadSelectedBtn.addEventListener('mouseenter', function() {
                         this.style.background = colorScheme.hoverBackground
                         this.style.color = colorScheme.hoverText
                     })
-                    downloadSelectedBtn.addEventListener('mouseleave', function() { 
+                    downloadSelectedBtn.addEventListener('mouseleave', function() {
                         this.style.background = colorScheme.gradient
                         this.style.color = 'black'
                     })
-                    
+
                     downloadSelectedBtn.addEventListener('click', async function() {
                         // Get all checked images from all pages by collecting URLs from checked checkboxes
                         const checkedBoxes = imagePopup.querySelectorAll('.image-checkbox:checked')
                         const checkedUrls = new Set()
-                        
+
                         // Collect URLs from currently visible checkboxes
                         checkedBoxes.forEach(cb => {
                             checkedUrls.add(cb.dataset.url)
@@ -2196,7 +3384,7 @@
 
         // Append the popup to the body for proper centering
         document.body.appendChild(imagePopup)
-        
+
         // Trigger animation
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -2211,20 +3399,137 @@
 
     function retrieveConversationChunk(uuid, offset, collected, btn, chatIndex = null)
         {
+        // Check cache on first chunk (offset 0)
+        if (offset === 0) {
+            const cachedMessages = chatCache.getChatMessages(uuid)
+            if (cachedMessages && cachedMessages.length > 0) {
+                // Use cached messages
+                if (chatIndex !== null) {
+                    const chatData = window.currentChats ? window.currentChats[chatIndex] : null
+                    showChatImages(cachedMessages, chatIndex, chatData)
+                } else {
+                    exportConversation(cachedMessages)
+                }
+
+                btn.busy = false
+                btn.innerText = chatIndex !== null ? 'Images' : 'Download'
+                return // Don't make API call
+            }
+        }
+
+        // Update progress if this is an export (not image viewing)
+        if (chatIndex === null && btn && !btn.progressIndicator) {
+            // Create a progress indicator element
+            const progressContainer = document.createElement('div')
+            progressContainer.className = 'holly-export-progress'
+            progressContainer.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000010; background: ${colorScheme.cardBackground}; border: 1px solid ${colorScheme.border}; border-radius: 12px; padding: 20px; min-width: 300px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.5);`
+
+            const progressTitle = document.createElement('div')
+            progressTitle.textContent = 'Exporting Chat...'
+            progressTitle.style.cssText = `color: ${colorScheme.textPrimary}; font-weight: 600; font-size: 16px; margin-bottom: 12px;`
+
+            const progressBarContainer = document.createElement('div')
+            progressBarContainer.style.cssText = `width: 100%; height: 8px; background: ${colorScheme.border}; border-radius: 4px; overflow: hidden; margin-bottom: 8px;`
+
+            const progressBar = document.createElement('div')
+            progressBar.style.cssText = `height: 100%; background: ${colorScheme.gradient}; width: 0%; transition: width 0.3s ease; border-radius: 4px;`
+
+            const progressText = document.createElement('div')
+            progressText.className = 'holly-progress-text'
+            progressText.style.cssText = `color: ${colorScheme.textSecondary}; font-size: 12px; text-align: center;`
+            progressText.textContent = 'Fetching messages...'
+
+            progressBarContainer.appendChild(progressBar)
+            progressContainer.appendChild(progressTitle)
+            progressContainer.appendChild(progressBarContainer)
+            progressContainer.appendChild(progressText)
+            progressContainer.style.opacity = '0'
+            document.body.appendChild(progressContainer)
+
+            // Fade in animation
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    progressContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease'
+                    progressContainer.style.opacity = '1'
+                })
+            })
+
+            btn.progressIndicator = {
+                container: progressContainer,
+                bar: progressBar,
+                text: progressText,
+                startOffset: offset
+            }
+        }
+
+        // Update progress text
+        if (btn && btn.progressIndicator && chatIndex === null) {
+            const chunkNumber = Math.floor(offset / QUERY_BATCH_SIZE) + 1
+            btn.progressIndicator.text.textContent = `Fetching chunk ${chunkNumber}...`
+            // Estimate progress (we don't know total, so show based on chunks)
+            const estimatedProgress = Math.min(90, (chunkNumber * 10)) // Cap at 90% until we're done
+            btn.progressIndicator.bar.style.width = `${estimatedProgress}%`
+        }
+
         ajax('https://api.' + location.hostname + '/v1/chats/' + uuid + '/messages?limit=' + QUERY_BATCH_SIZE + '&offset=' + offset, false, function (r)
             {
             r = JSON.parse(r)
-            if (!r || r.error)
+            if (!r || r.error) {
+                // Remove progress indicator on error
+                if (btn && btn.progressIndicator) {
+                    btn.progressIndicator.container.remove()
+                    btn.progressIndicator = null
+                }
                 return
+            }
 
             collected = collected.concat(r.messages)
 
-            if (r.messages.length == QUERY_BATCH_SIZE)
+            if (r.messages.length == QUERY_BATCH_SIZE) {
+                // Update progress before next chunk
+                if (btn && btn.progressIndicator && chatIndex === null) {
+                    const chunkNumber = Math.floor(offset / QUERY_BATCH_SIZE) + 1
+                    btn.progressIndicator.text.textContent = `Fetched ${collected.length} messages... (chunk ${chunkNumber})`
+                }
                 retrieveConversationChunk(uuid, offset + QUERY_BATCH_SIZE, collected, btn, chatIndex)
-            else
-                {
-                btn.busy = false
-                btn.innerText = chatIndex !== null ? 'Images' : 'Download'
+            } else {
+                // All done - cache the messages
+                chatCache.setChatMessages(uuid, collected)
+
+                // All done - complete progress bar
+                if (btn && btn.progressIndicator && chatIndex === null) {
+                    btn.progressIndicator.bar.style.width = '100%'
+                    btn.progressIndicator.text.textContent = `Fetched ${collected.length} messages. Preparing export...`
+                }
+
+                // Small delay to show 100% before closing
+                setTimeout(() => {
+                    // For HTML format (async), keep progress indicator, otherwise remove it
+                    const format = document.getElementById('holly_download_format')?.value || 'txt'
+                    const isHTMLFormat = format === 'html'
+
+                    if (!isHTMLFormat) {
+                        // Remove progress indicator for non-HTML formats (they're fast and synchronous)
+                        if (btn && btn.progressIndicator) {
+                            btn.progressIndicator.container.style.opacity = '0'
+                            btn.progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                            setTimeout(() => {
+                                if (btn.progressIndicator && btn.progressIndicator.container.parentNode) {
+                                    btn.progressIndicator.container.remove()
+                                }
+                                btn.progressIndicator = null
+                            }, 300)
+                        }
+                    } else {
+                        // Update progress for HTML format
+                        if (btn && btn.progressIndicator) {
+                            btn.progressIndicator.text.textContent = `Processing ${collected.length} messages for HTML export...`
+                            btn.progressIndicator.bar.style.width = '95%'
+                        }
+                    }
+
+                    btn.busy = false
+                    btn.innerText = chatIndex !== null ? 'Images' : 'Download'
 
                 if (collected.length > 0)
                     {
@@ -2234,11 +3539,21 @@
                         const chatData = window.currentChats ? window.currentChats[chatIndex] : null
                         showChatImages(collected, chatIndex, chatData)
                     } else {
-                        exportConversation(collected)
+                        // Pass progress indicator for HTML format
+                        exportConversation(collected, btn && btn.progressIndicator ? btn.progressIndicator : null)
                     }
                     }
                 else
-                    alert('Nothing to download, this conversation is empty.')
+                    {
+                    // No messages, but we can still show character/background photos if viewing images
+                    if (chatIndex !== null) {
+                        const chatData = window.currentChats ? window.currentChats[chatIndex] : null
+                        showChatImages([], chatIndex, chatData)
+                    } else {
+                        alert('Nothing to download, this conversation is empty.')
+                    }
+                    }
+                }, 300) // Small delay to show 100% before export
                 }
             })
         }
@@ -2251,8 +3566,14 @@
             .slice(0, 120);
     }
 
-    function exportConversation(messages) {
-        const format = document.getElementById('holly_download_format').value; // 'txt' | 'jsonl-st' | 'jsonl-openai' | 'json'
+    function escapeHtml(text) {
+        const div = document.createElement('div')
+        div.textContent = text
+        return div.innerHTML
+    }
+
+    function exportConversation(messages, progressIndicator = null) {
+        const format = document.getElementById('holly_download_format').value; // 'txt' | 'jsonl-st' | 'jsonl-openai' | 'json' | 'html'
         let character_name = '';
         let character_uuid = '';
         const out = [];
@@ -2357,6 +3678,247 @@
                 };
                 const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
                 download(URL.createObjectURL(blob), `${baseName}.json`);
+            } else if (format === 'html') {
+                // HTML export with embedded images
+                let htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with ${sanitizeFileName(character_name || 'Character')}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #151820;
+            color: #ffffff;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: #25282c;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #303439;
+        }
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: ${isMoescape ? '#E4F063' : '#f597E8'};
+        }
+        .header .meta {
+            color: #999;
+            font-size: 14px;
+        }
+        .message {
+            background: #25282c;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid ${isMoescape ? '#E4F063' : '#f597E8'};
+        }
+        .message.user {
+            border-left-color: #4b5563;
+        }
+        .message-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: ${isMoescape ? '#E4F063' : '#f597E8'};
+        }
+        .message.user .message-header {
+            color: #ffffff;
+        }
+        .message-content {
+            color: #e0e0e0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .message-timestamp {
+            color: #999;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .message-images {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .message-images img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            border: 1px solid #303439;
+            cursor: pointer;
+        }
+        .greeting {
+            background: #25282c;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #303439;
+            font-style: italic;
+            color: #e0e0e0;
+        }
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .message-images img { max-height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Chat with ${sanitizeFileName(character_name || 'Character')}</h1>
+        <div class="meta">Exported on ${new Date().toLocaleString()} from ${location.hostname}</div>
+    </div>`
+
+                if (greeting) {
+                    htmlContent += `
+    <div class="greeting">
+        <strong>${sanitizeFileName(character_name || 'Character')}:</strong><br>
+        ${greeting.replace(/\n/g, '<br>')}
+    </div>`
+                }
+
+                // Process messages and embed images
+                const processMessagesForHTML = async () => {
+                    const totalMessages = sortedMessages.length
+                    for (let i = 0; i < sortedMessages.length; i++) {
+                        const msg = sortedMessages[i]
+                        const is_bot = (msg.message_source === 'bot')
+                        const name = is_bot ? (msg.character?.nickname || character_name || 'Character') : 'You'
+                        const text = msg.message || ''
+                        const ts = new Date(msg.created_at).toLocaleString()
+                        const msgClass = is_bot ? 'assistant' : 'user'
+
+                        // Update progress every 10 messages or at the end
+                        if (progressIndicator && (i % 10 === 0 || i === totalMessages - 1)) {
+                            const progress = Math.floor(((i + 1) / totalMessages) * 5) + 95 // 95-100%
+                            progressIndicator.bar.style.width = `${progress}%`
+                            progressIndicator.text.textContent = `Processing message ${i + 1} of ${totalMessages}...`
+                        }
+
+                        htmlContent += `
+    <div class="message ${msgClass}">
+        <div class="message-header">${name}</div>
+        <div class="message-content">${escapeHtml(text)}</div>`
+
+                        // Add images if present
+                        if (msg.text_to_image && msg.text_to_image.output_image_url) {
+                            htmlContent += `
+        <div class="message-images">`
+
+                            // Function to check if URL is a thumbnail
+                            const isThumbnail = (url) => {
+                                if (!url) return false
+                                return url.includes('-resized') ||
+                                       url.includes('width%3D256') ||
+                                       url.includes('width=256') ||
+                                       url.includes('width%3D512') ||
+                                       url.includes('width=512') ||
+                                       url.includes('thumbnail') ||
+                                       url.includes('thumb') ||
+                                       url.includes('small') ||
+                                       url.includes('preview')
+                            }
+
+                            // Try to get all full-size images from this message
+                            const imageUrls = []
+                            const seenUrls = new Set()
+
+                            // Add primary output_image_url if it's full-size
+                            if (msg.text_to_image.output_image_url && !isThumbnail(msg.text_to_image.output_image_url)) {
+                                imageUrls.push(msg.text_to_image.output_image_url)
+                                seenUrls.add(msg.text_to_image.output_image_url.split('?')[0]) // Normalize for comparison
+                            }
+
+                            // Check for additional images in arrays (prefer orig_url for full-size)
+                            const possibleImageFields = ['output_images', 'images', 'generated_images']
+                            for (const field of possibleImageFields) {
+                                if (msg.text_to_image[field] && Array.isArray(msg.text_to_image[field])) {
+                                    for (const img of msg.text_to_image[field]) {
+                                        let fullSizeUrl = null
+
+                                        if (typeof img === 'string' && img.startsWith('http')) {
+                                            // String URL - use it if it's not a thumbnail
+                                            if (!isThumbnail(img)) {
+                                                fullSizeUrl = img
+                                            }
+                                        } else if (img && typeof img === 'object') {
+                                            // Object - prefer orig_url (full-size), then check other fields if orig_url doesn't exist
+                                            // Priority: orig_url > url > src > image_url > full_url > original_url
+                                            if (img.orig_url && !isThumbnail(img.orig_url)) {
+                                                fullSizeUrl = img.orig_url
+                                            } else {
+                                                // Try other fields, but skip if they're thumbnails
+                                                const candidates = [img.url, img.src, img.image_url, img.full_url, img.original_url].filter(Boolean)
+                                                for (const candidate of candidates) {
+                                                    if (candidate && candidate.startsWith('http') && !isThumbnail(candidate)) {
+                                                        fullSizeUrl = candidate
+                                                        break
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Add full-size URL if found and not already added
+                                        if (fullSizeUrl && fullSizeUrl.startsWith('http')) {
+                                            const normalized = fullSizeUrl.split('?')[0]
+                                            if (!seenUrls.has(normalized)) {
+                                                imageUrls.push(fullSizeUrl)
+                                                seenUrls.add(normalized)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Add image tags (using URLs - base64 embedding would make file huge)
+                            for (const imgUrl of imageUrls) {
+                                htmlContent += `
+            <img src="${escapeHtml(imgUrl)}" alt="Generated image" loading="lazy" onclick="window.open(this.src, '_blank')">`
+                            }
+
+                            htmlContent += `
+        </div>`
+                        }
+
+                        htmlContent += `
+        <div class="message-timestamp">${ts}</div>
+    </div>`
+                    }
+
+                    htmlContent += `
+</body>
+</html>`
+
+                    // Complete progress
+                    if (progressIndicator) {
+                        progressIndicator.bar.style.width = '100%'
+                        progressIndicator.text.textContent = 'Export complete!'
+                    }
+
+                    const blob = new Blob([htmlContent], { type: 'text/html' })
+                    download(URL.createObjectURL(blob), `${baseName}.html`)
+
+                    // Close progress indicator after a brief delay
+                    if (progressIndicator) {
+                        setTimeout(() => {
+                            progressIndicator.container.style.opacity = '0'
+                            progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                            setTimeout(() => {
+                                if (progressIndicator.container.parentNode) {
+                                    progressIndicator.container.remove()
+                                }
+                            }, 300)
+                        }, 500)
+                    }
+                }
+
+                processMessagesForHTML()
             } else { // txt
                 const pieces = [];
                 if (greeting) pieces.push((character_name || 'Character') + '\n\n' + greeting);

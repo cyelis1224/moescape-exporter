@@ -1,5 +1,57 @@
 # Change Log - Tavern Chat Downloader
 
+## Version 2.2.6 - Grid View Fade Transitions & Smart Swipe Navigation
+
+### New Features
+- **Fade Transitions in Grid View**: Smooth fade animations when navigating between image batches
+  - Old images fade out (opacity transition) before grid removal
+  - New images fade in after grid creation
+  - Matches single image view timing (150ms fade duration)
+  - Works for both single images and 2-image batches in grid view
+  - All images in a batch fade together synchronously
+
+### UI/UX Enhancements
+- **Consistent Visual Experience**: Grid view now matches single image view transitions
+  - Smooth fade out/in effect maintains visual continuity
+  - No jarring instant swaps when navigating in comparison mode
+  - Professional, polished appearance across all viewing modes
+- **Smart Swipe Navigation**: Context-aware swipe gestures
+  - Swipe navigation only active when zoom is at 1x (fully zoomed out)
+  - When zoomed in, swipes are used for panning instead of navigation
+  - Prevents accidental image changes while panning zoomed images
+  - Clear separation between navigation and panning interactions
+
+### Technical Improvements
+- **Grid Rendering Refactoring**: Split grid creation into separate function
+  - `renderComparisonView()`: Handles fade-out logic and timing
+  - `_createComparisonGrid()`: Creates new grid with fade-in animations
+  - Proper sequencing ensures old images fade out before new ones appear
+  - Image opacity tracked in `newImages` array for coordinated fade-in
+- **Touch Event Optimization**: Enhanced swipe gesture detection
+  - Checks `currentZoom === 1` before processing navigation swipes
+  - Maintains existing metadata scroll detection
+  - Zoom container handles panning when zoomed in
+  - No conflicts between navigation and panning gestures
+
+### User Experience
+- **Polished Image Viewing**: Consistent fade transitions across all modes
+  - Single image view: smooth fade when changing images
+  - Grid view: smooth fade when navigating between batches
+  - Professional appearance that matches native image viewers
+  - Visual feedback confirms successful navigation
+- **Intuitive Gestures**: Clear distinction between navigation and panning
+  - At 1x zoom: swipe to navigate between images
+  - When zoomed: swipe to pan around the image
+  - No confusion about which action will occur
+  - Natural interaction patterns that feel responsive
+
+### Bug Fixes
+- Fixed ES6 syntax issues in grid rendering code (converted to ES5 for compatibility)
+- Fixed duplicate variable declarations in `_createComparisonGrid` function
+- Ensured proper timing between fade-out and fade-in animations
+
+-----
+
 ## Version 2.2.5 - Image Viewer Zoom & Pan & Body Scroll Lock
 
 ### New Features

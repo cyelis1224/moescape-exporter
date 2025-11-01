@@ -1,5 +1,141 @@
 # Change Log - Tavern Chat Downloader
 
+## Version 2.2.4 - Character Icons Refactor & Visual Polish
+
+### New Features
+- **Horizontally Scrollable Character Icons**: Complete redesign of character icon display
+  - Replaced grid layout with smooth horizontal scrolling list
+  - Fixed width container showing 1.25 character icons to hint at scrollable content
+  - Subtle fade effects on left and right edges using gradient overlays
+  - First icon includes 24px left padding for perfect alignment with single-character chats
+  - Scrollbar automatically hidden for single-character chats (no scrolling needed)
+  - Scrollbar matches export list styling for visual consistency (8px height, 4px border-radius)
+
+### UI/UX Enhancements
+- **Improved Visual Hierarchy**: Character icons no longer take up excessive vertical space
+  - Consistent 56px icon size across all devices and character counts
+  - Better space utilization with horizontal scrolling
+  - Glow effects fully visible with proper padding and overflow handling
+  - Fade gradients blend seamlessly with card background
+- **Mobile Filter Button Improvements**: Enhanced touch interface for filter controls
+  - Filter buttons (Recent Chats, Bookmarks) properly aligned on mobile
+  - Larger icons (24x24px) for better visibility and touch targets
+  - Consistent 44x44px button sizes for optimal touch interaction
+  - Proper flexbox alignment ensures buttons sit on same baseline
+
+### Technical Improvements
+- **Overflow Management**: Proper handling of glow effects and fade gradients
+  - Container overflow adjusted to allow glow effects to display fully
+  - Padding calculations account for box-shadow extensions (12px blur + 4px offset)
+  - Fade pseudo-elements positioned to stay within chat entry boundaries
+  - Scrollbar styling unified across all scrollable containers
+
+### User Experience
+- **Cleaner Interface**: Character icons take up less space while remaining accessible
+- **Better Visual Feedback**: Glow effects visible without clipping
+- **Consistent Design**: Scrollbars match throughout the application
+- **Improved Mobile Experience**: Better button alignment and sizing for touch interfaces
+
+-----
+
+## Version 2.2.0 - Bookmark System & Advanced Organization
+
+### New Features
+- **Bookmark System**: Complete bookmarking functionality for favorite chats
+  - Bookmark icon button next to "Recent Only" filter for quick access
+  - Individual bookmark button on each chat entry (after Images button)
+  - Bookmarked chats persist across sessions using localStorage
+  - Bookmark filter button shows only bookmarked chats when active
+  - Dynamic modal title updates: "All Chats", "Recent Chats", or "Bookmarks"
+  - Bookmark count displayed in modal title when filter is active
+  - Visual indicators: primary color when unbookmarked, secondary color when bookmarked
+- **Recent Chats Filter**: Quick access to recently active conversations
+  - Extracts recent chat UUIDs from DOM (matches site's recent chats order)
+  - Preserves original DOM order when filtering
+  - Mutually exclusive with bookmark filter (activating one deactivates the other)
+  - Sort dropdown automatically hidden when Recent Chats filter is active
+- **Image Count Sorting**: Sort chats by number of generated images
+  - New sort option: "Image Count (Most/Least)"
+  - Lazy loading: image counts fetched only when this sort is selected
+  - Batch fetching with rate limiting for API efficiency
+  - Progress feedback during count fetching
+
+### UI/UX Enhancements
+- **Dynamic Modal Titles**: Context-aware titles with counts
+  - "All Chats (N)" - shows total when no filters active
+  - "Recent Chats (N)" - shows count when recent filter active
+  - "Bookmarks (N)" - shows bookmark count when bookmark filter active
+  - "Your chats with <Character name> (N)" - when opened from chat page
+- **Mutually Exclusive Filters**: Bookmark and Recent filters cannot be active simultaneously
+  - Activating one automatically deactivates the other
+  - Clear visual feedback with button state changes
+  - Sort dropdown shows/hides appropriately based on active filter
+
+### Technical Improvements
+- **BookmarkManager Module**: Dedicated module for bookmark management
+  - `getBookmarks()`: Retrieves bookmarked UUIDs from localStorage
+  - `isBookmarked(uuid)`: Checks bookmark status
+  - `toggleBookmark(uuid)`: Adds/removes bookmarks
+  - `getBookmarkCount()`: Returns total bookmark count
+- **Enhanced Chat List Filtering**: Improved filter logic and state management
+  - Bookmark filtering integrated into `recomputeList()` function
+  - Recent chats filter preserves DOM order via indexOf sorting
+  - Sort logic respects active filter states
+  - Title updates dynamically based on active filters
+
+### User Experience
+- **Better Organization**: Easily find and access favorite chats
+- **Quick Access**: Recent chats filter for fast navigation to active conversations
+- **Persistent Preferences**: Bookmarks saved across browser sessions
+- **Smart Sorting**: Find image-heavy chats quickly with image count sorting
+- **Clear Visual Feedback**: Bookmarked chats clearly distinguished with color changes
+
+-----
+
+## Version 2.1.0 - Code Refactoring & Modularization
+
+### Major Refactoring
+- **Modular Code Organization**: Complete restructuring into logical modules
+  - **ImageManager Module**: All image-related functionality consolidated
+    - `closeImagePopup()`, `showImageViewer()`, `renderComparisonView()`
+    - `findBatchImages()`, `closeImageViewer()`, `filterImages()`
+    - `displayCurrentPage()`, `updatePaginationControls()`, `showChatImages()`
+  - **ChatManager Module**: Chat data retrieval and management
+    - `retrieveChatsChunk()`: Paginated chat list fetching with caching
+    - `fetchImageCountForChat()`: Lightweight image count retrieval
+    - `fetchImageCountRecursive()`: Recursive helper for nested fetching
+    - `extractRecentChatUuids()`: DOM-based recent chats extraction
+    - `fetchImageCountsForMissingChats()`: Batch fetching with rate limiting
+  - **ExportManager Module**: Export functionality isolated
+    - `exportConversation()`: Handles all export formats (TXT, JSONL-ST, JSONL-OpenAI, JSON, HTML)
+    - Image embedding logic for HTML exports
+    - Character greeting handling for SillyTavern format
+  - **UIComponents Module**: UI creation functions grouped
+    - `triggerExporter()`: Opens chat exporter modal with context
+    - `addExporterToChatMenu()`: Dynamic menu item insertion
+
+### Technical Improvements
+- **ES5 Compatibility**: Full conversion for broader browser support
+  - All `let`/`const` converted to `var`
+  - Arrow functions converted to traditional `function` expressions
+  - Template literals replaced with string concatenation
+  - `.includes()` replaced with `.indexOf() !== -1`
+- **Backward Compatibility**: Wrapper functions maintained for existing code
+  - All moved functions have global wrappers for compatibility
+  - No breaking changes to existing functionality
+- **Improved File Structure**: Clear organization with detailed header comments
+  - 13 logical sections with clear boundaries
+  - Easy navigation and maintenance
+  - Better code discoverability
+
+### Code Quality
+- **Better Maintainability**: Related functionality grouped logically
+- **Reduced Duplication**: Common patterns extracted to modules
+- **Easier Testing**: Isolated modules can be tested independently
+- **Enhanced Readability**: Clear module boundaries and responsibilities
+
+-----
+
 ## Version 2.0.0 - Advanced Image Metadata & Generation Details
 
 ### New Features

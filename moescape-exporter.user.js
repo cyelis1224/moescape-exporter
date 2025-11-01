@@ -1393,8 +1393,28 @@
 
         var isBookmarkFilterActive = false
 
-        bookmarkFilterBtn.addEventListener('click', function() {
-            if (bookmarkCount === 0) return
+        bookmarkFilterBtn.addEventListener('click', function(e) {
+            // Prevent clicks if button is disabled
+            if (this.disabled) {
+                e.preventDefault()
+                e.stopPropagation()
+                return false
+            }
+            
+            // Check bookmark count dynamically in case it changed
+            var currentBookmarkCount = BookmarkManager.getBookmarkCount()
+            if (currentBookmarkCount === 0) {
+                // If no bookmarks, ensure filter is inactive
+                isBookmarkFilterActive = false
+                this.style.background = colorScheme.cardBackground
+                this.style.color = colorScheme.textPrimary
+                if (sortSelect) sortSelect.style.display = ''
+                recomputeList()
+                updateTitleCount()
+                return
+            }
+            
+            // Toggle bookmark filter
             isBookmarkFilterActive = !isBookmarkFilterActive
 
             if (isBookmarkFilterActive) {
@@ -1738,19 +1758,46 @@
                         filterBtn.disabled = true
                         filterBtn.style.opacity = '0.5'
                         filterBtn.style.cursor = 'not-allowed'
+                        
+                        // Check if bookmark filter is active by checking if sort dropdown is hidden
+                        // (bookmark filter hides sort dropdown, but so does recent filter)
+                        var sortSelect = document.getElementById('holly_sort_chats')
+                        var recentBtn = document.getElementById('holly_recent_chats_filter')
+                        var recentActive = false
+                        if (recentBtn) {
+                            // Check if recent button has gradient background (active state)
+                            var recentBg = recentBtn.style.background || recentBtn.style.backgroundColor || ''
+                            recentActive = recentBg.indexOf(colorScheme.gradient) !== -1
+                        }
+                        
+                        // If sort is hidden and recent is NOT active, then bookmark filter must be active
+                        if (sortSelect && sortSelect.style.display === 'none' && !recentActive) {
+                            // Deactivate bookmark filter and show all chats
+                            // renderChatItems is inside showChatsToDownload scope, so isBookmarkFilterActive is accessible
+                            isBookmarkFilterActive = false
+                            filterBtn.style.background = colorScheme.cardBackground
+                            filterBtn.style.color = colorScheme.textPrimary
+                            sortSelect.style.display = ''
+                            
+                            // Trigger recompute to show all chats - these functions are in parent scope
+                            recomputeList()
+                            updateTitleCount()
+                        } else {
+                            // Just update title count if filter wasn't active
+                            updateTitleCount()
+                        }
                     } else {
                         filterBtn.disabled = false
                         filterBtn.style.opacity = '1'
                         filterBtn.style.cursor = 'pointer'
+                        
+                        // If bookmark filter is active, recompute the list (which will update title count)
+                        if (typeof recomputeList === 'function') {
+                            recomputeList()
+                        } else if (typeof updateTitleCount === 'function') {
+                            updateTitleCount()
+                        }
                     }
-                }
-
-                // If bookmark filter is active, recompute the list (which will update title count)
-                if (isBookmarkFilterActive) {
-                    recomputeList()
-                } else {
-                    // Update title count even if filter not active
-                    updateTitleCount()
                 }
             })
 

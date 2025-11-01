@@ -1,5 +1,76 @@
 # Change Log - Tavern Chat Downloader
 
+## Version 2.2.5 - Image Viewer Zoom & Pan & Body Scroll Lock
+
+### New Features
+- **Zoom and Pan Functionality**: Professional image viewing with zoom and pan controls
+  - Zoom slider control (1x to 5x) positioned at bottom center of image viewer
+  - Real-time zoom value display (e.g., "1.0x", "2.5x")
+  - Click and drag to pan when zoomed in (cursor changes to grab/grabbing)
+  - Pinch-to-zoom support on mobile devices
+  - Double-click image to reset zoom and recenter
+  - Reset button (↺) in zoom slider for quick return to 1x
+  - Zoom automatically resets when navigating between images
+  - Minimum zoom set to 1x (no zoom out below native size)
+- **Body Scroll Lock**: Prevents background page scrolling when modals are open
+  - Background remains fixed when export modal, image popup, or image viewer is open
+  - Scroll position restored when modals close
+  - Prevents accidental scrolling when reaching bottom of modal content
+  - Handles nested modals correctly (viewer over popup, etc.)
+
+### UI/UX Enhancements
+- **Zoom Control Design**: Sleek zoom slider with integrated controls
+  - Positioned above metadata toggle to avoid overlap
+  - Reset button with hover effects matching theme colors
+  - Smooth transitions when zooming and panning
+  - Visual feedback with cursor changes during pan operations
+- **Smart UI Hiding**: Zoom controls automatically hidden in grid/comparison view
+  - Zoom slider hidden when viewing image batches in grid mode
+  - Only visible in single-image viewing mode
+  - Maintains clean interface when comparing images
+- **Responsive Touch Controls**: Enhanced mobile experience
+  - Two-finger pinch gesture for zoom in/out
+  - Single-finger drag for panning when zoomed
+  - Touch handling doesn't interfere with swipe navigation
+  - Smooth zoom and pan animations on all devices
+
+### Technical Improvements
+- **Zoom State Management**: Robust zoom and pan state tracking
+  - Zoom values range from 1x (minimum) to 5x (maximum)
+  - Pan coordinates tracked independently of zoom
+  - Transform applied via CSS for smooth hardware acceleration
+  - Transform origin set to center for natural zoom behavior
+- **Event Handling**: Proper touch and mouse event management
+  - Pinch-to-zoom calculates distance between two touch points
+  - Pan tracking maintains smooth drag experience
+  - Event handlers properly scoped to prevent conflicts
+  - Touch events don't interfere with existing swipe navigation
+- **Body Scroll Lock Implementation**: Reliable scroll prevention
+  - Saves current scroll position before locking
+  - Uses `position: fixed` with calculated offset
+  - Restores scroll position when unlocking
+  - Handles modal nesting (only unlocks when all modals closed)
+
+### User Experience
+- **Enhanced Image Viewing**: Zoom into image details for closer inspection
+  - Perfect for examining fine details in generated images
+  - Easy navigation through zoomed images with pan controls
+  - Quick reset to default view with reset button or double-click
+  - Smooth, responsive controls that feel native
+- **Better Modal Experience**: No accidental background scrolling
+  - Focus remains on modal content
+  - Prevents disorientation when scrolling reaches modal boundaries
+  - Seamless experience when switching between modals
+  - Maintains page context when modals close
+
+### Bug Fixes
+- Fixed event listener ordering that prevented image viewer from opening
+- Fixed zoom slider calculation when using pinch-to-zoom on mobile
+- Ensured zoom state resets correctly when navigating between images
+- Proper cleanup of zoom event handlers when viewer closes
+
+-----
+
 ## Version 2.2.4 - Character Icons Refactor & Visual Polish
 
 ### New Features

@@ -3,7 +3,7 @@
 // @namespace    Holly
 // @author       Holly
 // @collaborator Dagyr
-// @version      2.2.6
+// @version      2.2.7
 // @description  Preserve your Tavern conversations. Supports both Moescape and Yodayo.
 // @match        https://yodayo.com/*
 // @match        https://moescape.ai/*
@@ -3550,8 +3550,28 @@
                 var newImages = []
                 for (var idx = 0; idx < batchImages.length; idx++) {
                     var imgData = batchImages[idx]
+                    
+                    // Find the actual index of this image in imageViewerImages
+                    var actualIndex = -1
+                    for (var searchIdx = 0; searchIdx < imageViewerImages.length; searchIdx++) {
+                        // Match by URL and also check if we have additional matching criteria (uuid, timestamp)
+                        var matches = imageViewerImages[searchIdx].url === imgData.url
+                        if (imgData.uuid && imageViewerImages[searchIdx].uuid) {
+                            matches = matches && imageViewerImages[searchIdx].uuid === imgData.uuid
+                        }
+                        if (matches) {
+                            actualIndex = searchIdx
+                            break
+                        }
+                    }
+                    
                     var imgContainer = document.createElement('div')
                     imgContainer.style.cssText = 'position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: ' + colorScheme.cardBackground + '; border-radius: 8px; padding: 0; border: 1px solid ' + colorScheme.border + '; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;'
+                    
+                    // Store the actual index as a data attribute for reliable lookup
+                    if (actualIndex !== -1) {
+                        imgContainer.setAttribute('data-image-index', actualIndex)
+                    }
 
                     var img = document.createElement('img')
                     img.src = imgData.url
@@ -3570,15 +3590,9 @@
 
                     // Click handler to switch to single view of this image
                     imgContainer.addEventListener('click', function() {
-                        // Find the index of this image in imageViewerImages
-                        var targetIndex = -1
-                        for (var imgIdx = 0; imgIdx < imageViewerImages.length; imgIdx++) {
-                            if (imageViewerImages[imgIdx].url === imgData.url) {
-                                targetIndex = imgIdx
-                                break
-                            }
-                        }
-                        if (targetIndex !== -1 && window.hollyShowImageAtIndex && window.hollySetComparisonMode) {
+                        // Get the stored index from the data attribute
+                        var targetIndex = parseInt(this.getAttribute('data-image-index'), 10)
+                        if (targetIndex !== -1 && !isNaN(targetIndex) && window.hollyShowImageAtIndex && window.hollySetComparisonMode) {
                             // Exit comparison mode first
                             window.hollySetComparisonMode(false)
 

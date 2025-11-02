@@ -4691,6 +4691,10 @@
                                 return;
                             }
                             
+                            // Get coordinates from touch or mouse event
+                            var clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+                            var clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
+                            
                             // Check if we need to convert from transform-based to left/top positioning
                             var computedStyle = window.getComputedStyle(progressContainer);
                             var currentTransform = computedStyle.transform;
@@ -4714,9 +4718,9 @@
                                 currentY = rect.top;
                             }
                             
-                            // Calculate drag offset from where the mouse clicked relative to the container's current position
-                            dragOffsetX = e.clientX - currentX;
-                            dragOffsetY = e.clientY - currentY;
+                            // Calculate drag offset from where the touch/mouse started relative to the container's current position
+                            dragOffsetX = clientX - currentX;
+                            dragOffsetY = clientY - currentY;
                             
                             isDragging = true;
                             progressContainer.style.cursor = 'grabbing';
@@ -4726,8 +4730,13 @@
                         function drag(e) {
                             if (!isDragging) return;
                             e.preventDefault();
-                            currentX = e.clientX - dragOffsetX;
-                            currentY = e.clientY - dragOffsetY;
+                            
+                            // Get coordinates from touch or mouse event
+                            var clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+                            var clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
+                            
+                            currentX = clientX - dragOffsetX;
+                            currentY = clientY - dragOffsetY;
 
                             // Constrain to viewport
                             var maxX = window.innerWidth - progressContainer.offsetWidth;
@@ -4748,20 +4757,34 @@
                         }
 
                         headerRow.addEventListener('mousedown', startDrag);
+                        headerRow.addEventListener('touchstart', startDrag, { passive: false });
                         // Also allow dragging from minimized content area (but not buttons)
                         minimizedContent.addEventListener('mousedown', function(e) {
                             if (!isInteractiveElement(e.target)) {
                                 startDrag(e);
                             }
                         });
+                        minimizedContent.addEventListener('touchstart', function(e) {
+                            if (!isInteractiveElement(e.target)) {
+                                startDrag(e);
+                            }
+                        }, { passive: false });
                         // Allow dragging from anywhere in the progress container (padding areas)
                         progressContainer.addEventListener('mousedown', function(e) {
                             if (!isInteractiveElement(e.target)) {
                                 startDrag(e);
                             }
                         });
+                        progressContainer.addEventListener('touchstart', function(e) {
+                            if (!isInteractiveElement(e.target)) {
+                                startDrag(e);
+                            }
+                        }, { passive: false });
                         document.addEventListener('mousemove', drag);
+                        document.addEventListener('touchmove', drag, { passive: false });
                         document.addEventListener('mouseup', stopDrag);
+                        document.addEventListener('touchend', stopDrag);
+                        document.addEventListener('touchcancel', stopDrag);
 
                         // Minimize functionality
                         var isMinimized = false;
@@ -5534,6 +5557,10 @@
                     return
                 }
                 
+                // Get coordinates from touch or mouse event
+                var clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX
+                var clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY
+                
                 // Check if we need to convert from transform-based to left/top positioning
                 var computedStyle = window.getComputedStyle(progressContainer)
                 var currentTransform = computedStyle.transform
@@ -5557,9 +5584,9 @@
                     currentY = rect.top
                 }
                 
-                // Calculate drag offset from where the mouse clicked relative to the container's current position
-                dragOffsetX = e.clientX - currentX
-                dragOffsetY = e.clientY - currentY
+                // Calculate drag offset from where the touch/mouse started relative to the container's current position
+                dragOffsetX = clientX - currentX
+                dragOffsetY = clientY - currentY
                 
                 isDragging = true
                 progressContainer.style.cursor = 'grabbing'
@@ -5569,8 +5596,13 @@
             function drag(e) {
                 if (!isDragging) return
                 e.preventDefault()
-                currentX = e.clientX - dragOffsetX
-                currentY = e.clientY - dragOffsetY
+                
+                // Get coordinates from touch or mouse event
+                var clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX
+                var clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY
+                
+                currentX = clientX - dragOffsetX
+                currentY = clientY - dragOffsetY
 
                 // Constrain to viewport
                 var maxX = window.innerWidth - progressContainer.offsetWidth
@@ -5591,20 +5623,34 @@
             }
 
             headerRow.addEventListener('mousedown', startDrag)
+            headerRow.addEventListener('touchstart', startDrag, { passive: false })
             // Also allow dragging from minimized content area (but not buttons)
             minimizedContent.addEventListener('mousedown', function(e) {
                 if (!isInteractiveElement(e.target)) {
                     startDrag(e)
                 }
             })
+            minimizedContent.addEventListener('touchstart', function(e) {
+                if (!isInteractiveElement(e.target)) {
+                    startDrag(e)
+                }
+            }, { passive: false })
             // Allow dragging from anywhere in the progress container (padding areas)
             progressContainer.addEventListener('mousedown', function(e) {
                 if (!isInteractiveElement(e.target)) {
                     startDrag(e)
                 }
             })
+            progressContainer.addEventListener('touchstart', function(e) {
+                if (!isInteractiveElement(e.target)) {
+                    startDrag(e)
+                }
+            }, { passive: false })
             document.addEventListener('mousemove', drag)
+            document.addEventListener('touchmove', drag, { passive: false })
             document.addEventListener('mouseup', stopDrag)
+            document.addEventListener('touchend', stopDrag)
+            document.addEventListener('touchcancel', stopDrag)
 
             // Minimize functionality
             var isMinimized = false

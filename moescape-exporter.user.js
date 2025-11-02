@@ -2565,7 +2565,7 @@
 
                         const detailsSection = document.createElement('div')
                     detailsSection.className = 'metadata-details'
-                    detailsSection.style.cssText = `display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; text-align: left; max-height: 300px; overflow-y: auto;`
+                    detailsSection.style.cssText = `display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; text-align: left; overflow-y: auto;`
 
                     // Build details content
                     let detailsHTML = ''
@@ -2670,10 +2670,10 @@
                         isExpanded = !isExpanded
                         if (isExpanded) {
                             detailsSection.style.display = 'block'
-                            triangle.style.transform = 'rotate(180deg)'
+                            triangle.style.transform = 'rotate(0deg)'
                         } else {
                             detailsSection.style.display = 'none'
-                            triangle.style.transform = 'rotate(0deg)'
+                            triangle.style.transform = 'rotate(180deg)'
                         }
                     })
 
@@ -2832,7 +2832,7 @@
         var zoomSliderContainer = document.createElement('div')
         zoomSliderContainer.className = 'image-zoom-slider-container'
         zoomSliderContainer.id = 'holly-zoom-slider-container'
-        zoomSliderContainer.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; z-index: 1000002; background: ' + colorScheme.cardBackground + '; padding: 12px 20px; border-radius: 12px; border: 1px solid ' + colorScheme.border + ';'
+        zoomSliderContainer.style.cssText = 'position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; z-index: 1000002; background: ' + colorScheme.cardBackground + '; padding: 12px 20px; border-radius: 12px; border: 1px solid ' + colorScheme.border + ';'
 
         var zoomLabel = document.createElement('span')
         zoomLabel.textContent = 'Zoom'
@@ -3065,7 +3065,7 @@
         // Create zoom/pan container for image
         var imageZoomContainer = document.createElement('div')
         imageZoomContainer.className = 'image-zoom-container'
-        imageZoomContainer.style.cssText = 'position: relative; width: 100%; height: 100%; overflow: hidden; cursor: grab; touch-action: none;'
+        imageZoomContainer.style.cssText = 'position: relative; width: 100%; height: 100%; overflow: hidden; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;'
 
         // Create image wrapper for transform
         var imageWrapper = document.createElement('div')
@@ -3129,12 +3129,15 @@
                 dragStartPanX = currentPanX
                 dragStartPanY = currentPanY
                 imageZoomContainer.style.cursor = 'grabbing'
+                // Disable transition during drag for instant feedback
+                imageWrapper.style.transition = 'none'
                 e.preventDefault()
             }
         })
 
         document.addEventListener('mousemove', function(e) {
             if (isDragging && currentZoom > 1) {
+                e.preventDefault()
                 var deltaX = e.clientX - dragStartX
                 var deltaY = e.clientY - dragStartY
                 currentPanX = dragStartPanX + deltaX
@@ -3146,6 +3149,8 @@
         document.addEventListener('mouseup', function() {
             if (isDragging) {
                 isDragging = false
+                // Re-enable transition after drag
+                imageWrapper.style.transition = 'transform 0.1s ease-out'
                 imageZoomContainer.style.cursor = currentZoom > 1 ? 'grab' : 'default'
             }
         })
@@ -3302,7 +3307,7 @@
         // Check localStorage for user's metadata visibility preference
         var savedMetadataVisible = localStorage.getItem('hollyMetadataVisible') === 'true'
         var initialDisplay = savedMetadataVisible ? 'block' : 'none'
-        metadata.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; padding: 12px 20px; border-radius: 8px; border: 1px solid ' + colorScheme.border + '; font-size: 14px; max-width: 80vw; text-align: center; transition: opacity 0.15s; display: ' + initialDisplay + ';'
+        metadata.style.cssText = 'position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); max-height: 60vh; overflow-y: auto; background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; padding: 12px 20px; border-radius: 8px; border: 1px solid ' + colorScheme.border + '; font-size: 14px; max-width: 100%; width: 260px;text-align: center; transition: opacity 0.15s; display: ' + initialDisplay + ';'
 
         var message = document.createElement('div')
         message.className = 'metadata-message'
@@ -3330,12 +3335,12 @@
 
             const triangle = document.createElement('span')
             triangle.innerHTML = '▼'
-            triangle.style.cssText = `font-size: 14px; color: ${colorScheme.textSecondary}; transition: transform 0.3s; pointer-events: none;`
+            triangle.style.cssText = `font-size: 14px; color: ${colorScheme.textSecondary}; transition: transform 0.3s; pointer-events: none; transform: rotate(180deg);`
             expandToggle.appendChild(triangle)
 
             const detailsSection = document.createElement('div')
             detailsSection.className = 'metadata-details'
-            detailsSection.style.cssText = `display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; text-align: left; max-height: 300px; overflow-y: auto;`
+            detailsSection.style.cssText = `display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; text-align: left; overflow-y: scroll; height: 260px;`
 
             // Build details content
             let detailsHTML = ''
@@ -3440,10 +3445,10 @@
                 isExpanded = !isExpanded
                 if (isExpanded) {
                     detailsSection.style.display = 'block'
-                    triangle.style.transform = 'rotate(180deg)'
+                    triangle.style.transform = 'rotate(0deg)'
                 } else {
                     detailsSection.style.display = 'none'
-                    triangle.style.transform = 'rotate(0deg)'
+                    triangle.style.transform = 'rotate(180deg)'
                 }
             })
 
@@ -3600,6 +3605,48 @@
         document.body.appendChild(downloadBtn)
         document.body.appendChild(leftArrow)
         document.body.appendChild(rightArrow)
+
+        // Add mobile landscape styles for image viewer if not already added
+        if (!document.getElementById('image-viewer-mobile-landscape-style')) {
+            var landscapeStyle = document.createElement('style')
+            landscapeStyle.id = 'image-viewer-mobile-landscape-style'
+            landscapeStyle.textContent = `
+                @media (max-width: 768px) and (orientation: landscape) {
+                    /* Move zoom slider to bottom between metadata toggle and download button */
+                    #holly-zoom-slider-container {
+                        position: fixed !important;
+                        bottom: 20px !important;
+                        left: 50% !important;
+                        transform: translateX(-50%) !important;
+                        margin: 0 !important;
+                    }
+                    /* Limit metadata modal height */
+                    .image-metadata {
+                        max-height: 80% !important;
+                    }
+                }
+            `
+            document.head.appendChild(landscapeStyle)
+        }
+
+        // Add mobile portrait (vertical) styles for image viewer if not already added
+        if (!document.getElementById('image-viewer-mobile-portrait-style')) {
+            var portraitStyle = document.createElement('style')
+            portraitStyle.id = 'image-viewer-mobile-portrait-style'
+            portraitStyle.textContent = `
+                @media (max-width: 768px) and (orientation: portrait) {
+                    /* Move metadata modal to bottom */
+                    .image-metadata {
+                        bottom: 20px !important;
+                    }
+                    /* Move zoom slider up */
+                    #holly-zoom-slider-container {
+                        bottom: 80px !important;
+                    }
+                }
+            `
+            document.head.appendChild(portraitStyle)
+        }
 
         // Trigger animation
         requestAnimationFrame(function() {

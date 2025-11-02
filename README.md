@@ -86,7 +86,7 @@ This script adds powerful export and management tools directly to your Tavern ex
 
 ## Version History
 
-See the [Source Code](https://openuserjs.org/scripts/Dagyr/Tavern_Chat_Downloader/source) tab for the complete changelog.
+See the [Change Log](https://github.com/cyelis1224/moescape-exporter/blob/main/Change_log.txt) for version history.
 
 ## Credits
 

@@ -3,7 +3,7 @@
 // @namespace    Holly
 // @author       Holly
 // @collaborator Dagyr
-// @version      2.2.8
+// @version      2.2.9
 // @description  Preserve your Tavern conversations. Supports both Moescape and Yodayo.
 // @match        https://yodayo.com/*
 // @match        https://moescape.ai/*
@@ -46,13 +46,13 @@
     let imagePopup
     let imageViewerModal = null
     let chatCharacterPhotos = {} // Store character photos by chat UUID
-    
+
     // Pagination state
     let currentPage = 1
     let pageSize = 20
     let totalImages = 0
     let filteredImages = []
-    
+
     // Image viewer state
     let currentImageViewerIndex = 0
     let imageViewerImages = []
@@ -616,7 +616,7 @@
     // Site detection and color schemes
     const isMoescape = location.hostname.includes('moescape.ai')
     const isYodayo = location.hostname.includes('yodayo.com')
-    
+
     // Color schemes based on site
     const colorScheme = isMoescape ? {
         // Moescape colors (darker, more purple-tinted)
@@ -652,16 +652,16 @@
             width: 8px;
             height: 8px;
         }
-        
+
         *::-webkit-scrollbar-track {
             background: transparent;
         }
-        
+
         *::-webkit-scrollbar-thumb {
             background: ${colorScheme.border};
             border-radius: 4px;
         }
-        
+
         *::-webkit-scrollbar-thumb:hover {
             background: ${colorScheme.cardBackground};
         }
@@ -678,10 +678,10 @@
             /* Larger touch targets for navigation arrows in image viewer */
             .image-viewer-arrow-left,
             .image-viewer-arrow-right {
-                min-width: 56px !important;
-                min-height: 56px !important;
-                width: 56px !important;
-                height: 56px !important;
+                min-width: 64px !important;
+                min-height: 64px !important;
+                width: 64px !important;
+                height: 64px !important;
             }
 
             /* Larger touch targets for modal controls */
@@ -692,6 +692,12 @@
             .holly-metadata-toggle-switch {
                 min-width: 48px !important;
                 min-height: 26px !important;
+            }
+
+            /* Character icons wrapper max-width on mobile */
+            .char-icons-wrapper {
+                max-width: 100px !important;
+                padding: 20px 0px !important;
             }
 
             /* Better spacing for touch interactions */
@@ -716,7 +722,6 @@
             }
 
             /* Better modal spacing on mobile */
-            .image-popup,
             div[style*="z-index: 110"] > div {
                 padding: 16px !important;
                 gap: 16px !important;
@@ -780,51 +785,51 @@
     // ============================================================================
     // UTILITY FUNCTIONS
     // ============================================================================
-    
+
     // Body scroll lock utilities
     var bodyScrollLocked = false
     var originalBodyOverflow = ''
     var originalBodyPosition = ''
     var scrollLockOffset = 0
-    
+
     function lockBodyScroll() {
         if (bodyScrollLocked) return // Already locked
         bodyScrollLocked = true
-        
+
         var body = document.body
         var html = document.documentElement
-        
+
         // Save original values
         originalBodyOverflow = body.style.overflow || ''
         originalBodyPosition = body.style.position || ''
-        
+
         // Calculate current scroll position
         scrollLockOffset = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
-        
+
         // Lock scroll
         body.style.overflow = 'hidden'
         body.style.position = 'fixed'
         body.style.width = '100%'
         body.style.top = '-' + scrollLockOffset + 'px'
     }
-    
+
     function unlockBodyScroll() {
         if (!bodyScrollLocked) return // Not locked
         bodyScrollLocked = false
-        
+
         var body = document.body
-        
+
         // Restore original values
         body.style.overflow = originalBodyOverflow
         body.style.position = originalBodyPosition
         body.style.width = ''
         body.style.top = ''
-        
+
         // Restore scroll position
         if (scrollLockOffset !== undefined) {
             window.scrollTo(0, scrollLockOffset)
         }
-        
+
         // Reset saved values
         originalBodyOverflow = ''
         originalBodyPosition = ''
@@ -1268,21 +1273,21 @@
         // Create header
         var header = document.createElement('div')
         header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: clamp(16px, 3vw, 24px);'
-        
+
         var title = document.createElement('h2')
         title.textContent = 'Settings'
         title.style.cssText = 'font-size: clamp(20px, 5vw, 28px); font-weight: 600; color: ' + colorScheme.textPrimary + '; margin: 0;'
-        
+
         var closeBtn = document.createElement('button')
         closeBtn.innerHTML = '✕'
         closeBtn.style.cssText = 'background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 8px; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px); cursor: pointer; font-weight: 500; transition: background-color 0.2s; font-size: clamp(12px, 3vw, 14px);'
-        closeBtn.addEventListener('mouseenter', function() { 
-            this.style.backgroundColor = colorScheme.hoverBackground; 
+        closeBtn.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = colorScheme.hoverBackground;
         })
-        closeBtn.addEventListener('mouseleave', function() { 
-            this.style.backgroundColor = colorScheme.cardBackground; 
+        closeBtn.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = colorScheme.cardBackground;
         })
-        
+
         header.appendChild(title)
         header.appendChild(closeBtn)
         settingsPopup.appendChild(header)
@@ -1290,29 +1295,29 @@
         // Create toggle container
         var toggleContainer = document.createElement('div')
         toggleContainer.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: clamp(16px, 3vw, 24px); padding: clamp(12px, 2.5vw, 16px); background: ' + colorScheme.cardBackground + '; border-radius: 8px; border: 1px solid ' + colorScheme.border + ';'
-        
+
         // Create toggle switch
         var toggleSwitch = document.createElement('div')
         toggleSwitch.className = 'holly-auto-close-toggle-switch'
         toggleSwitch.style.cssText = 'width: 48px; height: 26px; background: ' + colorScheme.cardBackground + '; border: 2px solid ' + colorScheme.border + '; border-radius: 13px; position: relative; cursor: pointer; transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); flex-shrink: 0;'
-        
+
         var toggleSlider = document.createElement('div')
         toggleSlider.style.cssText = 'width: 20px; height: 20px; background: ' + colorScheme.textSecondary + '; border-radius: 50%; position: absolute; top: 1px; left: 2px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.4);'
-        
+
         toggleSwitch.appendChild(toggleSlider)
-        
+
         // Create label
         var label = document.createElement('span')
         label.textContent = 'Auto-close Download pop-up'
         label.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-size: clamp(14px, 3vw, 16px); cursor: pointer; user-select: none; flex: 1;'
-        
+
         toggleContainer.appendChild(toggleSwitch)
         toggleContainer.appendChild(label)
         settingsPopup.appendChild(toggleContainer)
-        
+
         // Load toggle state from localStorage (default to true - auto-close enabled until user sets preference)
         var autoCloseEnabled = localStorage.getItem('hollyAutoCloseProgress') !== 'false'
-        
+
         // Set initial toggle state
         function updateToggleState(enabled) {
             if (enabled) {
@@ -1326,40 +1331,40 @@
             }
         }
         updateToggleState(autoCloseEnabled)
-        
+
         // Toggle function
         var toggleAutoClose = function() {
             autoCloseEnabled = !autoCloseEnabled
             updateToggleState(autoCloseEnabled)
         }
-        
+
         toggleSwitch.addEventListener('click', toggleAutoClose)
         label.addEventListener('click', toggleAutoClose)
 
         // Create button container at bottom
         var buttonContainer = document.createElement('div')
         buttonContainer.style.cssText = 'display: flex; gap: 12px; justify-content: flex-end; margin-top: auto; padding-top: clamp(16px, 3vw, 24px);'
-        
+
         var saveBtn = document.createElement('button')
         saveBtn.textContent = 'Save'
         saveBtn.style.cssText = 'background: ' + colorScheme.gradient + '; color: black; border: none; border-radius: 8px; padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px); cursor: pointer; font-weight: 500; font-size: clamp(14px, 3vw, 16px); transition: opacity 0.2s;'
-        saveBtn.addEventListener('mouseenter', function() { 
-            this.style.opacity = '0.9'; 
+        saveBtn.addEventListener('mouseenter', function() {
+            this.style.opacity = '0.9';
         })
-        saveBtn.addEventListener('mouseleave', function() { 
-            this.style.opacity = '1'; 
+        saveBtn.addEventListener('mouseleave', function() {
+            this.style.opacity = '1';
         })
-        
+
         var closeButton = document.createElement('button')
         closeButton.textContent = 'Close'
         closeButton.style.cssText = 'background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 8px; padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px); cursor: pointer; font-weight: 500; font-size: clamp(14px, 3vw, 16px); transition: background-color 0.2s;'
-        closeButton.addEventListener('mouseenter', function() { 
-            this.style.backgroundColor = colorScheme.hoverBackground; 
+        closeButton.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = colorScheme.hoverBackground;
         })
-        closeButton.addEventListener('mouseleave', function() { 
-            this.style.backgroundColor = colorScheme.cardBackground; 
+        closeButton.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = colorScheme.cardBackground;
         })
-        
+
         buttonContainer.appendChild(saveBtn)
         buttonContainer.appendChild(closeButton)
         settingsPopup.appendChild(buttonContainer)
@@ -1374,7 +1379,7 @@
             settingsCover.style.webkitBackdropFilter = 'blur(0px)'
             settingsPopup.style.opacity = '0'
             settingsPopup.style.transform = 'translate(-50%, -50%) scale(0.95)'
-            
+
             setTimeout(function() {
                 if (settingsCover && settingsCover.parentNode) {
                     settingsCover.parentNode.removeChild(settingsCover)
@@ -1443,7 +1448,7 @@
         titleElement.title = titleText + ' (' + chats.length + ')'
         popup.appendChild(titleElement)
         cover.appendChild(popup)
-        
+
         // Lock body scroll when modal opens
         lockBodyScroll()
 
@@ -1451,14 +1456,14 @@
         var closeModal = function () {
             // Unlock body scroll when modal closes
             unlockBodyScroll()
-            
+
             // Start closing animation
             cover.style.backgroundColor = 'rgba(0, 0, 0, 0)'
             cover.style.backdropFilter = 'blur(0px)'
             cover.style.webkitBackdropFilter = 'blur(0px)'
             popup.style.opacity = '0'
             popup.style.transform = 'translate(-50%, -50%) scale(0.95)'
-            
+
             // Remove from DOM after animation
             setTimeout(function() {
                 if (cover && cover.parentNode) {
@@ -1466,17 +1471,17 @@
                 }
             }, 300)
         }
-        
+
         // Settings button (gear icon)
         var settingsButton = document.createElement('button')
         settingsButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path></svg>'
         settingsButton.title = 'Settings'
         settingsButton.style.cssText = 'position: absolute; top: clamp(12px, 2vw, 24px); right: clamp(64px, 12vw, 96px); background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; padding: clamp(6px, 1.5vw, 8px); border-radius: 8px; border: none; cursor: pointer; font-weight: 500; transition: background-color 0.2s, color 0.2s; display: flex; align-items: center; justify-content: center; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px);'
-        settingsButton.addEventListener('mouseenter', function() { 
+        settingsButton.addEventListener('mouseenter', function() {
             this.style.backgroundColor = colorScheme.hoverBackground;
             this.style.color = colorScheme.hoverText;
         })
-        settingsButton.addEventListener('mouseleave', function() { 
+        settingsButton.addEventListener('mouseleave', function() {
             this.style.backgroundColor = colorScheme.cardBackground;
             this.style.color = colorScheme.textPrimary;
         })
@@ -1490,11 +1495,11 @@
         closeButton.innerHTML = '✕'
         closeButton.addEventListener('click', closeModal)
         closeButton.style.cssText = 'position: absolute; top: clamp(12px, 2vw, 24px); right: clamp(12px, 2vw, 24px); background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 14px); border-radius: 8px; border: none; cursor: pointer; font-weight: 500; transition: background-color 0.2s, color 0.2s; font-size: clamp(12px, 3vw, 14px); width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px);'
-        closeButton.addEventListener('mouseenter', function() { 
+        closeButton.addEventListener('mouseenter', function() {
             this.style.backgroundColor = colorScheme.hoverBackground;
             this.style.color = colorScheme.textSecondary;
         })
-        closeButton.addEventListener('mouseleave', function() { 
+        closeButton.addEventListener('mouseleave', function() {
             this.style.backgroundColor = colorScheme.cardBackground;
             this.style.color = colorScheme.textPrimary;
         })
@@ -1648,7 +1653,7 @@
                 e.stopPropagation()
                 return false
             }
-            
+
             // Check bookmark count dynamically in case it changed
             var currentBookmarkCount = BookmarkManager.getBookmarkCount()
             if (currentBookmarkCount === 0) {
@@ -1661,7 +1666,7 @@
                 updateTitleCount()
                 return
             }
-            
+
             // Toggle bookmark filter
             isBookmarkFilterActive = !isBookmarkFilterActive
 
@@ -1790,7 +1795,7 @@
             var charIconsWrapper = document.createElement('div')
             charIconsWrapper.className = 'char-icons-wrapper'
             // overflow: visible allows glow effects to show, padding adds space for glow (box-shadow extends 12px + 4px offset)
-            charIconsWrapper.style.cssText = 'position: relative; max-width: 80px; flex-shrink: 0; overflow: visible; padding: 8px 0;'
+            charIconsWrapper.style.cssText = 'position: relative; max-width: 320px; flex-shrink: 0; overflow: hidden; padding: 20px 20px;'
 
             // Create character icons container - horizontally scrollable list
             var charIconsContainer = document.createElement('div')
@@ -1805,7 +1810,7 @@
             // overflow-y: visible allows glow effect to show, padding adds space for glow (box-shadow extends 12px + 4px offset)
             // Hide scrollbar for single character chats
             var scrollbarStyle = numChars === 1 ? 'scrollbar-width: none;' : 'scrollbar-width: thin;'
-            charIconsContainer.style.cssText = 'display: flex; gap: 8px; overflow-x: ' + (numChars === 1 ? 'hidden' : 'auto') + '; overflow-y: visible; align-items: center; max-width: 100%; ' + scrollbarStyle + ' -webkit-overflow-scrolling: touch; padding: 12px 0;'
+            charIconsContainer.style.cssText = 'display: flex; gap: 8px; overflow-x: ' + (numChars === 1 ? 'hidden' : 'auto') + '; overflow-y: hidden; align-items: center; max-width: 100%; ' + scrollbarStyle + ' -webkit-overflow-scrolling: touch; padding: 12px 0; scale: 1.25;'
 
             // Hide scrollbar and add fade effects
             if (!document.getElementById('char-icons-scroll-style')) {
@@ -1817,7 +1822,7 @@
             }
 
             charIconsWrapper.appendChild(charIconsContainer)
-            
+
             // Add character icons
             chatData.chars.forEach(function(char, charIndex) {
                 // Create clickable link wrapper
@@ -1829,10 +1834,10 @@
                     charLink.href = 'https://yodayo.com/tavern/characters/' + char.uuid
                 }
                 charLink.target = '_blank'
-                // Add padding-left to first icon to align with single icon chats
+                // Add padding-left and drop-shadow to first icon to align with single icon chats
                 var linkStyle = 'text-decoration: none; cursor: pointer; flex-shrink: 0;'
                 if (charIndex === 0) {
-                    linkStyle += ' padding-left: 24px;'
+                    linkStyle += ' padding-left: 44px;'
                 }
                 charLink.style.cssText = linkStyle
                 charLink.title = 'View ' + char.name + '\'s profile'
@@ -1842,17 +1847,17 @@
                 var iconSize = '56px'
                 charIcon.style.cssText = 'width: ' + iconSize + '; height: ' + iconSize + '; border-radius: 50%; border: 2px solid ' + colorScheme.border + '; overflow: hidden; flex-shrink: 0; background: ' + colorScheme.cardBackground + '; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s;'
                 charIcon.title = char.name
-                
+
                 // Add hover effect
                 charLink.addEventListener('mouseenter', function() {
                     charIcon.style.transform = 'scale(1.05)'
-                    charIcon.style.boxShadow = '0 4px 12px ' + colorScheme.glowColor
+                    charIcon.style.boxShadow = '0 4px 8px ' + colorScheme.glowColor
                 })
                 charLink.addEventListener('mouseleave', function() {
                     charIcon.style.transform = 'scale(1)'
                     charIcon.style.boxShadow = 'none'
                 })
-                
+
                 if (char.photos && char.photos.thumbnail) {
                     // Use thumbnail photo if available
                     charIcon.innerHTML = '<img src="' + char.photos.thumbnail + '" style="width: 100%; height: 100%; object-fit: cover;">'
@@ -1861,11 +1866,11 @@
                     charIcon.innerHTML = '<img src="' + char.photos.foreground[0] + '" style="width: 100%; height: 100%; object-fit: cover;">'
                 }
                 // If no photos available, leave the icon empty (just the background)
-                
+
                 charLink.appendChild(charIcon)
                 charIconsContainer.appendChild(charLink)
             })
-            
+
             // Create container for name and date
             var nameDateContainer = document.createElement('div')
             nameDateContainer.style.cssText = 'display: flex; flex-direction: column; flex: 1; gap: 4px; min-width: 0;'
@@ -2014,7 +2019,7 @@
                         filterBtn.disabled = true
                         filterBtn.style.opacity = '0.5'
                         filterBtn.style.cursor = 'not-allowed'
-                        
+
                         // Check if bookmark filter is active by checking if sort dropdown is hidden
                         // (bookmark filter hides sort dropdown, but so does recent filter)
                         var sortSelect = document.getElementById('holly_sort_chats')
@@ -2025,7 +2030,7 @@
                             var recentBg = recentBtn.style.background || recentBtn.style.backgroundColor || ''
                             recentActive = recentBg.indexOf(colorScheme.gradient) !== -1
                         }
-                        
+
                         // If sort is hidden and recent is NOT active, then bookmark filter must be active
                         if (sortSelect && sortSelect.style.display === 'none' && !recentActive) {
                             // Deactivate bookmark filter and show all chats
@@ -2034,7 +2039,7 @@
                             filterBtn.style.background = colorScheme.cardBackground
                             filterBtn.style.color = colorScheme.textPrimary
                             sortSelect.style.display = ''
-                            
+
                             // Trigger recompute to show all chats - these functions are in parent scope
                             recomputeList()
                             updateTitleCount()
@@ -2046,7 +2051,7 @@
                         filterBtn.disabled = false
                         filterBtn.style.opacity = '1'
                         filterBtn.style.cursor = 'pointer'
-                        
+
                         // If bookmark filter is active, recompute the list (which will update title count)
                         if (typeof recomputeList === 'function') {
                             recomputeList()
@@ -2337,7 +2342,7 @@
         footer.appendChild(formatSelect)
         popup.appendChild(footer)
         document.body.appendChild(cover)
-        
+
         // Add ESC key listener
         const escHandler = (e) => {
             if (e.key === 'Escape') {
@@ -2351,7 +2356,7 @@
             }
         }
         document.addEventListener('keydown', escHandler)
-        
+
         // Add backdrop click handler
         cover.addEventListener('click', function(e) {
             // Only close if clicking the backdrop itself, not the popup
@@ -2359,7 +2364,7 @@
                 closeModal()
             }
         })
-        
+
         // Trigger animation
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -2383,7 +2388,7 @@
             {
             imagePopup.style.opacity = '0'
             imagePopup.style.transform = 'translate(-50%, -50%) scale(0.95)'
-            
+
             // Remove from DOM after animation
             setTimeout(function() {
                 if (imagePopup && imagePopup.parentNode) {
@@ -2403,7 +2408,7 @@
             backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0)'
             backdrop.style.backdropFilter = 'blur(0px)'
             backdrop.style.webkitBackdropFilter = 'blur(0px)'
-            
+
             // Remove from DOM after animation
             setTimeout(function() {
                 if (backdrop && backdrop.parentNode) {
@@ -2439,7 +2444,7 @@
 
             // Lock body scroll when viewer opens
             lockBodyScroll()
-            
+
             // Create backdrop overlay
             const backdrop = document.createElement('div')
             backdrop.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 1000000; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: background-color 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease; cursor: pointer;'
@@ -2517,7 +2522,7 @@
                 // Fade out
                 if (img) img.style.opacity = '0'
                 metadata.style.opacity = '0'
-                
+
                 // Reset zoom and pan when changing images
                 if (imageZoomContainer) {
                     currentZoom = 1
@@ -2681,8 +2686,8 @@
                     metadata.style.opacity = '1'
 
                     // Update arrow visibility
-                    leftArrow.style.opacity = idx === 0 ? '0.3' : '1'
-                    rightArrow.style.opacity = idx === imageViewerImages.length - 1 ? '0.3' : '1'
+                    leftArrow.style.opacity = idx === 0 ? '0.3' : '0.75'
+                    rightArrow.style.opacity = idx === imageViewerImages.length - 1 ? '0.3' : '0.75'
                 }, 150)
             }
 
@@ -2828,11 +2833,11 @@
         zoomSliderContainer.className = 'image-zoom-slider-container'
         zoomSliderContainer.id = 'holly-zoom-slider-container'
         zoomSliderContainer.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; z-index: 1000002; background: ' + colorScheme.cardBackground + '; padding: 12px 20px; border-radius: 12px; border: 1px solid ' + colorScheme.border + ';'
-        
+
         var zoomLabel = document.createElement('span')
         zoomLabel.textContent = 'Zoom'
         zoomLabel.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-size: 14px; font-weight: 500; min-width: 40px;'
-        
+
         var zoomSlider = document.createElement('input')
         zoomSlider.type = 'range'
         zoomSlider.min = '0'
@@ -2840,12 +2845,12 @@
         zoomSlider.value = '0' // 0% = 1.0x zoom (minimum)
         zoomSlider.style.cssText = 'width: 200px; height: 6px; cursor: pointer;'
         zoomSlider.title = 'Zoom: 1.0x'
-        
+
         var zoomValueLabel = document.createElement('span')
         zoomValueLabel.className = 'zoom-value-label'
         zoomValueLabel.textContent = '1.0x'
         zoomValueLabel.style.cssText = 'color: ' + colorScheme.textSecondary + '; font-size: 12px; min-width: 40px; text-align: right;'
-        
+
         // Create reset button
         var resetZoomBtn = document.createElement('button')
         resetZoomBtn.innerHTML = '↺'
@@ -2870,29 +2875,29 @@
             this.style.color = colorScheme.textPrimary
             this.style.borderColor = colorScheme.border
         })
-        
+
         zoomSlider.addEventListener('input', function() {
             var sliderValue = parseFloat(this.value)
             // Map 0-100 to 1x - 5x zoom
             currentZoom = 1 + (sliderValue / 100) * (5 - 1)
             zoomValueLabel.textContent = currentZoom.toFixed(1) + 'x'
             this.title = 'Zoom: ' + currentZoom.toFixed(1) + 'x'
-            
+
             // Reset pan when zoom changes to 1x
             if (currentZoom <= 1) {
                 currentPanX = 0
                 currentPanY = 0
             }
-            
+
             applyZoomAndPan()
         })
-        
+
         zoomSliderContainer.appendChild(zoomLabel)
         zoomSliderContainer.appendChild(zoomSlider)
         zoomSliderContainer.appendChild(zoomValueLabel)
         zoomSliderContainer.appendChild(resetZoomBtn)
         document.body.appendChild(zoomSliderContainer)
-        
+
         // Store zoom slider reference for comparison view
         window.hollyZoomSliderContainer = zoomSliderContainer
 
@@ -3020,9 +3025,9 @@
 
         // Create navigation arrows
         const leftArrow = document.createElement('button')
-        leftArrow.innerHTML = '←'
+        leftArrow.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 24px; height: 24px; transform: rotate(-270deg);"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path></svg>'
         leftArrow.className = 'image-viewer-arrow-left'
-        leftArrow.style.cssText = `position: fixed; top: 50%; left: 20px; transform: translateY(-50%); width: 56px; height: 56px; border-radius: 12px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 28px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === 0 ? '0.3' : '1'};`
+        leftArrow.style.cssText = `position: fixed; top: 50%; left: 20px; transform: translateY(-50%); width: 64px; height: 64px; border-radius: 12px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === 0 ? '0.3' : '0.75'};`
         leftArrow.addEventListener('click', function(e) {
             e.stopPropagation()
             navigate(-1)
@@ -3039,9 +3044,9 @@
         })
 
         const rightArrow = document.createElement('button')
-        rightArrow.innerHTML = '→'
+        rightArrow.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 24px; height: 24px; transform: rotate(270deg);"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path></svg>'
         rightArrow.className = 'image-viewer-arrow-right'
-        rightArrow.style.cssText = `position: fixed; top: 50%; right: 20px; transform: translateY(-50%); width: 56px; height: 56px; border-radius: 12px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 28px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === imageViewerImages.length - 1 ? '0.3' : '1'};`
+        rightArrow.style.cssText = `position: fixed; top: 50%; right: 20px; transform: translateY(-50%); width: 64px; height: 64px; border-radius: 12px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === imageViewerImages.length - 1 ? '0.3' : '0.75'};`
         rightArrow.addEventListener('click', function(e) {
             e.stopPropagation()
             navigate(1)
@@ -3061,18 +3066,18 @@
         var imageZoomContainer = document.createElement('div')
         imageZoomContainer.className = 'image-zoom-container'
         imageZoomContainer.style.cssText = 'position: relative; width: 100%; height: 100%; overflow: hidden; cursor: grab; touch-action: none;'
-        
+
         // Create image wrapper for transform
         var imageWrapper = document.createElement('div')
         imageWrapper.className = 'image-zoom-wrapper'
         imageWrapper.style.cssText = 'position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center center; transition: transform 0.1s ease-out;'
-        
+
         // Create image
         var img = document.createElement('img')
         img.src = imageData.url
         img.style.cssText = 'max-width: 95vw; max-height: 95vh; object-fit: contain; border-radius: 8px; transition: opacity 0.15s; user-select: none; pointer-events: none;'
         img.draggable = false
-        
+
         // Zoom state
         var currentZoom = 1
         var currentPanX = 0
@@ -3083,23 +3088,23 @@
         var dragStartPanX = 0
         var dragStartPanY = 0
         var initialDistance = 0
-        
+
         // Function to apply zoom and pan
         function applyZoomAndPan() {
             var transform = 'translate(' + currentPanX + 'px, ' + currentPanY + 'px) scale(' + currentZoom + ')'
             imageWrapper.style.transform = transform
         }
-        
+
         // Function to reset zoom and pan and recenter image
         function resetZoomAndPan() {
             currentZoom = 1
             // Reset pan to center (0, 0) - image wrapper is centered with flexbox
             currentPanX = 0
             currentPanY = 0
-            
+
             // Force a recalculation to ensure centering is applied
             applyZoomAndPan()
-            
+
             // Use requestAnimationFrame to ensure transform is applied smoothly
             requestAnimationFrame(function() {
                 applyZoomAndPan()
@@ -3108,13 +3113,13 @@
                     imageZoomContainer.style.cursor = 'default'
                 }
             })
-            
+
             if (zoomSlider) zoomSlider.value = 0 // 0% = 1.0x zoom (minimum)
             var zoomValueLabel = document.querySelector('.zoom-value-label')
             if (zoomValueLabel) zoomValueLabel.textContent = '1.0x'
             if (zoomSlider) zoomSlider.title = 'Zoom: 1.0x'
         }
-        
+
         // Mouse drag for panning
         imageZoomContainer.addEventListener('mousedown', function(e) {
             if (currentZoom > 1) {
@@ -3127,7 +3132,7 @@
                 e.preventDefault()
             }
         })
-        
+
         document.addEventListener('mousemove', function(e) {
             if (isDragging && currentZoom > 1) {
                 var deltaX = e.clientX - dragStartX
@@ -3137,14 +3142,14 @@
                 applyZoomAndPan()
             }
         })
-        
+
         document.addEventListener('mouseup', function() {
             if (isDragging) {
                 isDragging = false
                 imageZoomContainer.style.cursor = currentZoom > 1 ? 'grab' : 'default'
             }
         })
-        
+
         // Touch handlers for pinch-to-zoom and pan
         var touchStartDistance = 0
         var touchStartZoom = 1
@@ -3153,7 +3158,7 @@
         var touchCenterX = 0
         var touchCenterY = 0
         var lastTouchCount = 0
-        
+
         imageZoomContainer.addEventListener('touchstart', function(e) {
             if (e.touches.length === 2) {
                 // Pinch gesture - calculate initial distance
@@ -3165,11 +3170,11 @@
                 touchStartZoom = currentZoom
                 touchStartPanX = currentPanX
                 touchStartPanY = currentPanY
-                
+
                 // Calculate center point
                 touchCenterX = (touch1.clientX + touch2.clientX) / 2
                 touchCenterY = (touch1.clientY + touch2.clientY) / 2
-                
+
                 e.preventDefault()
             } else if (e.touches.length === 1 && currentZoom > 1) {
                 // Single touch for panning when zoomed
@@ -3182,7 +3187,7 @@
             }
             lastTouchCount = e.touches.length
         }, { passive: false })
-        
+
         imageZoomContainer.addEventListener('touchmove', function(e) {
             if (e.touches.length === 2) {
                 // Pinch gesture - calculate current distance
@@ -3191,13 +3196,13 @@
                 var dx = touch2.clientX - touch1.clientX
                 var dy = touch2.clientY - touch1.clientY
                 var currentDistance = Math.sqrt(dx * dx + dy * dy)
-                
+
                 if (touchStartDistance > 0) {
                     // Calculate zoom factor (scale by distance ratio)
                     var zoomFactor = currentDistance / touchStartDistance
                     var newZoom = Math.max(1, Math.min(5, touchStartZoom * zoomFactor))
                     currentZoom = newZoom
-                    
+
                     // Update zoom slider
                     if (zoomSlider) {
                         var sliderValue = ((newZoom - 1) / (5 - 1)) * 100
@@ -3206,7 +3211,7 @@
                         if (zoomValueLabel) zoomValueLabel.textContent = newZoom.toFixed(1) + 'x'
                         zoomSlider.title = 'Zoom: ' + newZoom.toFixed(1) + 'x'
                     }
-                    
+
                     // Update pan to keep pinch center point under fingers
                     var newCenterX = (touch1.clientX + touch2.clientX) / 2
                     var newCenterY = (touch1.clientY + touch2.clientY) / 2
@@ -3214,7 +3219,7 @@
                     var centerDeltaY = newCenterY - touchCenterY
                     currentPanX = touchStartPanX + centerDeltaX
                     currentPanY = touchStartPanY + centerDeltaY
-                    
+
                     applyZoomAndPan()
                 }
                 e.preventDefault()
@@ -3229,7 +3234,7 @@
                 e.preventDefault()
             }
         }, { passive: false })
-        
+
         imageZoomContainer.addEventListener('touchend', function(e) {
             if (lastTouchCount === 2 && e.touches.length < 2) {
                 // Pinch ended
@@ -3240,12 +3245,56 @@
             }
             lastTouchCount = e.touches.length
         }, { passive: true })
-        
+
         imageWrapper.appendChild(img)
         imageZoomContainer.appendChild(imageWrapper)
-        
+
         // Double-click to reset zoom (must be after imageZoomContainer is created)
         imageZoomContainer.addEventListener('dblclick', resetZoomAndPan)
+
+        // Scroll wheel zoom
+        imageZoomContainer.addEventListener('wheel', function(e) {
+            // Don't zoom if in comparison/grid view
+            var gridView = imageViewerModal.querySelector('.comparison-grid')
+            if (gridView && gridView.style.display !== 'none') {
+                return // Allow normal scrolling in grid view
+            }
+
+            e.preventDefault()
+            e.stopPropagation()
+
+            // Calculate zoom delta (negative deltaY = scroll up = zoom in)
+            var zoomDelta = -e.deltaY * 0.001 // Sensitivity factor
+            var newZoom = Math.max(1, Math.min(5, currentZoom + zoomDelta))
+
+            // Only update if zoom actually changed
+            if (Math.abs(newZoom - currentZoom) < 0.01) {
+                return
+            }
+
+            currentZoom = newZoom
+
+            // Reset pan when zoom reaches 1x
+            if (currentZoom <= 1) {
+                currentPanX = 0
+                currentPanY = 0
+            }
+
+            // Update zoom slider
+            if (zoomSlider) {
+                var sliderValue = ((currentZoom - 1) / (5 - 1)) * 100
+                zoomSlider.value = sliderValue
+                zoomSlider.title = 'Zoom: ' + currentZoom.toFixed(1) + 'x'
+            }
+
+            // Update zoom value label
+            var zoomValueLabel = document.querySelector('.zoom-value-label')
+            if (zoomValueLabel) {
+                zoomValueLabel.textContent = currentZoom.toFixed(1) + 'x'
+            }
+
+            applyZoomAndPan()
+        }, { passive: false })
 
         // Add metadata below image
         var metadata = document.createElement('div')
@@ -3578,7 +3627,7 @@
                     existingImages[i].style.transition = 'opacity 0.15s'
                     existingImages[i].style.opacity = '0'
                 }
-                
+
                 // Remove grid after fade out completes
                 setTimeout(function() {
                     if (existingGrid && existingGrid.parentNode) {
@@ -3592,7 +3641,7 @@
                 ImageManager._createComparisonGrid(enabled, batchImages, contentContainer)
             }
         },
-        
+
         // Helper function to create the comparison grid (separated for fade transitions)
         _createComparisonGrid: function(enabled, batchImages, contentContainer) {
 
@@ -3618,10 +3667,10 @@
             var imageZoomContainer = contentContainer.querySelector('.image-zoom-container')
             var singleImg = imageZoomContainer ? imageZoomContainer.querySelector('img') : contentContainer.querySelector('img')
             var metadata = contentContainer.querySelector('.image-metadata')
-            
+
             // Find metadata toggle container and download button using stored references
             var metadataToggle = document.getElementById('holly-metadata-toggle-container')
-            
+
             // Find download button more reliably
             var downloadButton = null
             var allButtons = document.querySelectorAll('button')
@@ -3743,7 +3792,7 @@
                 var newImages = []
                 for (var idx = 0; idx < batchImages.length; idx++) {
                     var imgData = batchImages[idx]
-                    
+
                     // Find the actual index of this image in imageViewerImages
                     var actualIndex = -1
                     for (var searchIdx = 0; searchIdx < imageViewerImages.length; searchIdx++) {
@@ -3757,10 +3806,10 @@
                             break
                         }
                     }
-                    
+
                     var imgContainer = document.createElement('div')
                     imgContainer.style.cssText = 'position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: ' + colorScheme.cardBackground + '; border-radius: 8px; padding: 0; border: 1px solid ' + colorScheme.border + '; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;'
-                    
+
                     // Store the actual index as a data attribute for reliable lookup
                     if (actualIndex !== -1) {
                         imgContainer.setAttribute('data-image-index', actualIndex)
@@ -3810,10 +3859,10 @@
 
                     grid.appendChild(imgContainer)
                 }
-                
+
                 // Append grid to container (initially with opacity 0 images)
                 contentContainer.appendChild(grid)
-                
+
                 // Fade in new images after a brief delay
                 setTimeout(function() {
                     for (var i = 0; i < newImages.length; i++) {
@@ -3922,7 +3971,7 @@
                     backdrop.style.backdropFilter = 'blur(0px)'
                     backdrop.style.webkitBackdropFilter = 'blur(0px)'
                 }
-                
+
                 // Unlock body scroll when viewer closes (only if popup isn't open)
                 if (!imagePopup || !imagePopup.parentNode) {
                     unlockBodyScroll()
@@ -4289,7 +4338,7 @@
                         '<button id="download-selected-btn" title="Download selected images" style="background: ' + colorScheme.gradient + '; color: black; border: none; border-radius: 6px; padding: clamp(6px, 1.5vw, 8px); width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7,10 12,15 17,10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>' +
                     '</div>' +
                 '</div>' +
-                '<div id="images-grid" style="display: flex; gap: clamp(8px, 2vw, 16px); padding: clamp(12px, 3vw, 20px); flex-wrap: wrap; overflow-y: auto; flex: 1; min-height: 0;">' +
+                '<div id="images-grid" style="display: flex; align-content: flex-start; gap: clamp(8px, 2vw, 16px); padding: clamp(12px, 3vw, 20px); flex-wrap: wrap; overflow-y: auto; flex: 1; min-height: 0;">' +
                 '</div>' +
                 '<div style="display: flex; justify-content: space-between; align-items: center; padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px); border-top: 1px solid ' + colorScheme.border + '; flex-shrink: 0; background: ' + colorScheme.cardBackground + '; flex-wrap: wrap; gap: clamp(8px, 2vw, 12px);">' +
                     '<div style="display: flex; align-items: center; gap: clamp(6px, 1.5vw, 12px); flex-wrap: wrap;">' +
@@ -4317,11 +4366,11 @@
                 if (closeBtn) {
                     closeBtn.addEventListener('click', function(){ self.closeImagePopup(); });
                     // Add hover effects to match export modal close button
-                    closeBtn.addEventListener('mouseenter', function() { 
-                        this.style.backgroundColor = colorScheme.hoverBackground; 
+                    closeBtn.addEventListener('mouseenter', function() {
+                        this.style.backgroundColor = colorScheme.hoverBackground;
                     });
-                    closeBtn.addEventListener('mouseleave', function() { 
-                        this.style.backgroundColor = colorScheme.cardBackground; 
+                    closeBtn.addEventListener('mouseleave', function() {
+                        this.style.backgroundColor = colorScheme.cardBackground;
                     });
                 }
 
@@ -4399,11 +4448,11 @@
                 var downloadSelectedBtn = imagePopup.querySelector('#download-selected-btn');
                 if (downloadSelectedBtn) {
                     // Add hover effects
-                    downloadSelectedBtn.addEventListener('mouseenter', function() { 
+                    downloadSelectedBtn.addEventListener('mouseenter', function() {
                         this.style.background = colorScheme.hoverBackground;
                         this.style.color = colorScheme.hoverText;
                     });
-                    downloadSelectedBtn.addEventListener('mouseleave', function() { 
+                    downloadSelectedBtn.addEventListener('mouseleave', function() {
                         this.style.background = colorScheme.gradient;
                         this.style.color = 'black';
                     });
@@ -4455,7 +4504,7 @@
                         // Create header with title and minimize button
                         var headerRow = document.createElement('div');
                         headerRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: move;';
-                        
+
                         var progressTitle = document.createElement('div');
                         progressTitle.textContent = 'Downloading Images...';
                         progressTitle.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-weight: 600; font-size: 16px; flex: 1;';
@@ -4513,20 +4562,20 @@
                         var minimizedContent = document.createElement('div');
                         minimizedContent.className = 'holly-progress-minimized-content';
                         minimizedContent.style.cssText = 'display: none; align-items: center; gap: 12px; cursor: move;';
-                        
+
                         // Minimized progress bar
                         var minimizedProgressBarContainer = document.createElement('div');
                         minimizedProgressBarContainer.style.cssText = 'flex: 1; height: 6px; background: ' + colorScheme.border + '; border-radius: 3px; overflow: hidden;';
                         var minimizedProgressBar = document.createElement('div');
                         minimizedProgressBar.style.cssText = 'height: 100%; background: ' + colorScheme.gradient + '; width: 0%; transition: width 0.3s ease; border-radius: 3px;';
                         minimizedProgressBarContainer.appendChild(minimizedProgressBar);
-                        
+
                         // Minimized count text
                         var minimizedCountText = document.createElement('div');
                         minimizedCountText.className = 'holly-progress-minimized-count';
                         minimizedCountText.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-size: 12px; font-weight: 500; white-space: nowrap; min-width: 60px; text-align: center;';
                         minimizedCountText.textContent = '0/0';
-                        
+
                         // Minimized minimize button (to expand)
                         var minimizedMinimizeBtn = document.createElement('button');
                         minimizedMinimizeBtn.innerHTML = '+';
@@ -4540,7 +4589,7 @@
                             this.style.backgroundColor = 'transparent';
                             this.style.color = colorScheme.textPrimary;
                         });
-                        
+
                         // Minimized close button (✕)
                         var minimizedCloseBtn = document.createElement('button');
                         minimizedCloseBtn.innerHTML = '✕';
@@ -4559,8 +4608,18 @@
                             // Use same logic as cancelBtn - check if it says "Close" or "Cancel"
                             if (cancelBtn.textContent === 'Close') {
                                 // Just close the modal
+                                // Use current position if modal was dragged, otherwise center
+                                var computedStyle = window.getComputedStyle(progressContainer);
+                                var currentTransform = computedStyle.transform;
+                                var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)';
+                                
                                 progressContainer.style.opacity = '0';
-                                progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                if (hasTransform) {
+                                    progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                } else {
+                                    // Modal was dragged, use scale on current position
+                                    progressContainer.style.transform = 'scale(0.95)';
+                                }
                                 setTimeout(function() {
                                     if (progressContainer && progressContainer.parentNode) {
                                         progressContainer.parentNode.removeChild(progressContainer);
@@ -4606,48 +4665,98 @@
                         var dragOffsetY = 0;
                         var currentX = 0;
                         var currentY = 0;
-                        
+
+                        // Helper function to check if target is interactive
+                        function isInteractiveElement(target) {
+                            if (!target) return false;
+                            var tagName = target.tagName;
+                            // Check if it's a button or inside a button
+                            if (tagName === 'BUTTON' || target.closest('button')) {
+                                return true;
+                            }
+                            // Check if it's an input or other interactive element
+                            if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+                                return true;
+                            }
+                            // Check if it's inside an input/textarea/select
+                            if (target.closest('input') || target.closest('textarea') || target.closest('select')) {
+                                return true;
+                            }
+                            return false;
+                        }
+
                         function startDrag(e) {
-                            // Don't start drag if clicking on buttons
-                            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                            // Don't start drag if clicking on interactive elements
+                            if (isInteractiveElement(e.target)) {
                                 return;
                             }
-                            isDragging = true;
+                            
+                            // Check if we need to convert from transform-based to left/top positioning
+                            var computedStyle = window.getComputedStyle(progressContainer);
+                            var currentTransform = computedStyle.transform;
+                            var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)';
+                            
+                            // Get current visual position first
                             var rect = progressContainer.getBoundingClientRect();
-                            dragOffsetX = e.clientX - rect.left;
-                            dragOffsetY = e.clientY - rect.top;
+                            
+                            if (hasTransform) {
+                                // Convert from transform-based positioning to left/top positioning
+                                currentX = rect.left;
+                                currentY = rect.top;
+                                progressContainer.style.top = currentY + 'px';
+                                progressContainer.style.left = currentX + 'px';
+                                progressContainer.style.transform = 'none';
+                                // Force a reflow to ensure the new position is applied
+                                progressContainer.offsetHeight;
+                            } else {
+                                // Already using left/top positioning, use current visual position
+                                currentX = rect.left;
+                                currentY = rect.top;
+                            }
+                            
+                            // Calculate drag offset from where the mouse clicked relative to the container's current position
+                            dragOffsetX = e.clientX - currentX;
+                            dragOffsetY = e.clientY - currentY;
+                            
+                            isDragging = true;
                             progressContainer.style.cursor = 'grabbing';
                             e.preventDefault();
                         }
-                        
+
                         function drag(e) {
                             if (!isDragging) return;
                             e.preventDefault();
                             currentX = e.clientX - dragOffsetX;
                             currentY = e.clientY - dragOffsetY;
-                            
+
                             // Constrain to viewport
                             var maxX = window.innerWidth - progressContainer.offsetWidth;
                             var maxY = window.innerHeight - progressContainer.offsetHeight;
                             currentX = Math.max(0, Math.min(currentX, maxX));
                             currentY = Math.max(0, Math.min(currentY, maxY));
-                            
+
                             progressContainer.style.left = currentX + 'px';
                             progressContainer.style.top = currentY + 'px';
                             progressContainer.style.transform = 'none';
                         }
-                        
+
                         function stopDrag() {
                             if (isDragging) {
                                 isDragging = false;
                                 progressContainer.style.cursor = 'move';
                             }
                         }
-                        
+
                         headerRow.addEventListener('mousedown', startDrag);
                         // Also allow dragging from minimized content area (but not buttons)
                         minimizedContent.addEventListener('mousedown', function(e) {
-                            if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                            if (!isInteractiveElement(e.target)) {
+                                startDrag(e);
+                            }
+                        });
+                        // Allow dragging from anywhere in the progress container (padding areas)
+                        progressContainer.addEventListener('mousedown', function(e) {
+                            if (!isInteractiveElement(e.target)) {
                                 startDrag(e);
                             }
                         });
@@ -4680,12 +4789,12 @@
                                 minimizeBtn.title = 'Minimize';
                             }
                         }
-                        
+
                         minimizeBtn.addEventListener('click', function(e) {
                             e.stopPropagation();
                             toggleMinimize();
                         });
-                        
+
                         minimizedMinimizeBtn.addEventListener('click', function(e) {
                             e.stopPropagation();
                             toggleMinimize();
@@ -4705,8 +4814,18 @@
                             // Check if button says "Close" (downloads complete) or "Cancel" (still downloading)
                             if (this.textContent === 'Close') {
                                 // Just close the modal, don't cancel downloads
+                                // Use current position if modal was dragged, otherwise center
+                                var computedStyle = window.getComputedStyle(progressContainer);
+                                var currentTransform = computedStyle.transform;
+                                var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)';
+                                
                                 progressContainer.style.opacity = '0';
-                                progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                if (hasTransform) {
+                                    progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                } else {
+                                    // Modal was dragged, use scale on current position
+                                    progressContainer.style.transform = 'scale(0.95)';
+                                }
                                 setTimeout(function() {
                                     if (progressContainer && progressContainer.parentNode) {
                                         progressContainer.parentNode.removeChild(progressContainer);
@@ -4720,8 +4839,18 @@
                                 // Cancel downloads in progress
                                 cancelState.cancelled = true;
                                 // Close progress indicator
+                                // Use current position if modal was dragged, otherwise center
+                                var computedStyle = window.getComputedStyle(progressContainer);
+                                var currentTransform = computedStyle.transform;
+                                var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)';
+                                
                                 progressContainer.style.opacity = '0';
-                                progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                if (hasTransform) {
+                                    progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                } else {
+                                    // Modal was dragged, use scale on current position
+                                    progressContainer.style.transform = 'scale(0.95)';
+                                }
                                 setTimeout(function() {
                                     if (progressContainer && progressContainer.parentNode) {
                                         progressContainer.parentNode.removeChild(progressContainer);
@@ -4743,7 +4872,7 @@
                             var failed = 0;
                             var totalImages = imagesToDownload.length;
                             var totalBatches = Math.ceil(totalImages / batchSize);
-                            
+
                             // Function to update both progress bars and counts
                             function updateProgress(current, total) {
                                 var percent = Math.min(95, (current / total) * 95);
@@ -4760,7 +4889,7 @@
                             function downloadSingle(img, index, cb) {
                                 var url = img.url;
                                 var filename = img.message.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '_' + (new Date(img.timestamp)).toISOString().split('T')[0] + '.jpg';
-                                
+
                                 // Check if cancelled before starting download
                                 if (cancelStateRef && cancelStateRef.cancelled) {
                                     console.log('Download cancelled before starting: ' + filename);
@@ -4783,7 +4912,7 @@
                                             console.log('Download cancelled before opening tab: ' + filename);
                                             return;
                                         }
-                                        
+
                                         var newTab = window.open(url, '_blank');
                                         if (newTab) {
                                             console.log('Opened ' + filename + ' in new tab for manual download');
@@ -4804,7 +4933,7 @@
                                                 console.log('Download cancelled during fetch: ' + filename);
                                                 return null; // Return null to indicate cancellation
                                             }
-                                            
+
                                             if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
                                             return response.blob();
                                         })
@@ -4814,9 +4943,9 @@
                                                 console.log('Download cancelled before creating link: ' + filename);
                                                 return;
                                             }
-                                            
+
                                             if (!blob) return; // Cancelled during fetch
-                                            
+
                                             var blobUrl = URL.createObjectURL(blob);
                                             var link = document.createElement('a');
                                             link.href = blobUrl;
@@ -4849,10 +4978,10 @@
                                     console.log('Download cancelled - stopping batch processing');
                                     return;
                                 }
-                                
+
                                 if (batchStart >= imagesToDownload.length) {
                                     console.log('Download complete: ' + successful + ' successful, ' + failed + ' failed');
-                                    
+
                                     // Complete progress bar
                                     updateProgress(successful, totalImages);
                                     progressBarRef.style.width = '100%';
@@ -4860,7 +4989,7 @@
                                         minimizedProgressBarRef.style.width = '100%';
                                     }
                                     progressTextRef.textContent = 'Download complete! ' + successful + ' successful, ' + failed + ' failed';
-                                    
+
                                     // Change cancel button to "Close"
                                     if (cancelBtnRef) {
                                         cancelBtnRef.textContent = 'Close';
@@ -4879,7 +5008,7 @@
                                             }
                                         }
                                     }
-                                    
+
                                     // Auto-close if enabled (defaults to true if preference not set)
                                     if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
                                         setTimeout(function() {
@@ -4914,7 +5043,7 @@
                                 // Update progress indicator at start of batch
                                 updateProgress(successful, totalImages);
                                 progressTextRef.textContent = 'Downloading batch ' + batchNumber + '/' + totalBatches + '... (' + successful + ' downloaded)';
-                                
+
                                 btnRef.title = 'Downloading batch ' + batchNumber + '/' + totalBatches + '...';
 
                                 // Download all in batch, callback after all finish
@@ -4926,7 +5055,7 @@
                                         console.log('Download cancelled - ignoring batch result');
                                         return;
                                     }
-                                    
+
                                     batchResults.push(result);
                                     if (result.success) successful++;
                                     else failed++;
@@ -4937,14 +5066,14 @@
                                             console.log('Download cancelled after batch complete');
                                             return;
                                         }
-                                        
+
                                         results = results.concat(batchResults);
                                         console.log('Batch ' + batchNumber + ' complete: ' + successful + ' successful, ' + failed + ' failed so far');
-                                        
+
                                         // Update progress after batch completes
                                         updateProgress(successful, totalImages);
                                         progressTextRef.textContent = 'Completed batch ' + batchNumber + '/' + totalBatches + ' (' + successful + ' downloaded)';
-                                        
+
                                         batchStart += batchSize;
                                         if (batchStart < imagesToDownload.length) {
                                             // Check if cancelled before scheduling next batch
@@ -5012,7 +5141,7 @@
                                         console.log('Download cancelled - stopping batch downloads');
                                         return;
                                     }
-                                    
+
                                     (function(img, idx) {
                                         downloadSingle(img, batchStart + idx, finishOne);
                                     })(batch[k], k);
@@ -5021,7 +5150,7 @@
 
                             // Initialize progress display
                             updateProgress(0, totalImages);
-                            
+
                             doBatch();
                         })(btn, svg, originalTitle, progressContainer, progressBar, progressText, cancelState, minimizedProgressBar, minimizedCountText, cancelBtn);
                     });
@@ -5209,7 +5338,7 @@
             // Create header with title and minimize button
             const headerRow = document.createElement('div')
             headerRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: move;'
-            
+
             const progressTitle = document.createElement('div')
             progressTitle.textContent = 'Exporting Chat...'
             progressTitle.style.cssText = `color: ${colorScheme.textPrimary}; font-weight: 600; font-size: 16px; flex: 1;`
@@ -5267,20 +5396,20 @@
             const minimizedContent = document.createElement('div')
             minimizedContent.className = 'holly-progress-minimized-content'
             minimizedContent.style.cssText = 'display: none; align-items: center; gap: 12px; cursor: move;'
-            
+
             // Minimized progress bar
             const minimizedProgressBarContainer = document.createElement('div')
             minimizedProgressBarContainer.style.cssText = `flex: 1; height: 6px; background: ${colorScheme.border}; border-radius: 3px; overflow: hidden;`
             const minimizedProgressBar = document.createElement('div')
             minimizedProgressBar.style.cssText = `height: 100%; background: ${colorScheme.gradient}; width: 0%; transition: width 0.3s ease; border-radius: 3px;`
             minimizedProgressBarContainer.appendChild(minimizedProgressBar)
-            
+
             // Minimized status text (shows "Exporting..." or "Complete")
             const minimizedStatusText = document.createElement('div')
             minimizedStatusText.className = 'holly-progress-minimized-status'
             minimizedStatusText.style.cssText = `color: ${colorScheme.textPrimary}; font-size: 12px; font-weight: 500; white-space: nowrap; min-width: 100px; text-align: center;`
             minimizedStatusText.textContent = 'Exporting...'
-            
+
             // Minimized minimize button (to expand)
             const minimizedMinimizeBtn = document.createElement('button')
             minimizedMinimizeBtn.innerHTML = '+'
@@ -5294,7 +5423,7 @@
                 this.style.backgroundColor = 'transparent'
                 this.style.color = colorScheme.textPrimary
             })
-            
+
             // Minimized close button (✕)
             var minimizedCloseBtn = document.createElement('button')
             minimizedCloseBtn.innerHTML = '✕'
@@ -5313,8 +5442,18 @@
                 // Use same logic as cancelBtn - check if it says "Close" or "Cancel"
                 if (cancelBtn.textContent === 'Close') {
                     // Just close the modal
+                    // Use current position if modal was dragged, otherwise center
+                    var computedStyle = window.getComputedStyle(progressContainer)
+                    var currentTransform = computedStyle.transform
+                    var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)'
+                    
                     progressContainer.style.opacity = '0'
-                    progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                    if (hasTransform) {
+                        progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                    } else {
+                        // Modal was dragged, use scale on current position
+                        progressContainer.style.transform = 'scale(0.95)'
+                    }
                     setTimeout(function() {
                         if (progressContainer && progressContainer.parentNode) {
                             progressContainer.parentNode.removeChild(progressContainer)
@@ -5327,8 +5466,18 @@
                     // Cancel export in progress
                     if (btn && btn.progressIndicator) {
                         btn.progressIndicator.cancelled = true
+                        // Use current position if modal was dragged, otherwise center
+                        var computedStyle = window.getComputedStyle(progressContainer)
+                        var currentTransform = computedStyle.transform
+                        var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)'
+                        
                         progressContainer.style.opacity = '0'
-                        progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                        if (hasTransform) {
+                            progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                        } else {
+                            // Modal was dragged, use scale on current position
+                            progressContainer.style.transform = 'scale(0.95)'
+                        }
                         setTimeout(function() {
                             if (btn.progressIndicator && btn.progressIndicator.container.parentNode) {
                                 btn.progressIndicator.container.parentNode.removeChild(btn.progressIndicator.container)
@@ -5359,48 +5508,98 @@
             var dragOffsetY = 0
             var currentX = 0
             var currentY = 0
-            
+
+            // Helper function to check if target is interactive
+            function isInteractiveElement(target) {
+                if (!target) return false
+                var tagName = target.tagName
+                // Check if it's a button or inside a button
+                if (tagName === 'BUTTON' || (target.closest && target.closest('button'))) {
+                    return true
+                }
+                // Check if it's an input or other interactive element
+                if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+                    return true
+                }
+                // Check if it's inside an input/textarea/select
+                if ((target.closest && (target.closest('input') || target.closest('textarea') || target.closest('select')))) {
+                    return true
+                }
+                return false
+            }
+
             function startDrag(e) {
-                // Don't start drag if clicking on buttons
-                if (e.target.tagName === 'BUTTON' || (e.target.closest && e.target.closest('button'))) {
+                // Don't start drag if clicking on interactive elements
+                if (isInteractiveElement(e.target)) {
                     return
                 }
-                isDragging = true
+                
+                // Check if we need to convert from transform-based to left/top positioning
+                var computedStyle = window.getComputedStyle(progressContainer)
+                var currentTransform = computedStyle.transform
+                var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)'
+                
+                // Get current visual position first
                 var rect = progressContainer.getBoundingClientRect()
-                dragOffsetX = e.clientX - rect.left
-                dragOffsetY = e.clientY - rect.top
+                
+                if (hasTransform) {
+                    // Convert from transform-based positioning to left/top positioning
+                    currentX = rect.left
+                    currentY = rect.top
+                    progressContainer.style.top = currentY + 'px'
+                    progressContainer.style.left = currentX + 'px'
+                    progressContainer.style.transform = 'none'
+                    // Force a reflow to ensure the new position is applied
+                    progressContainer.offsetHeight
+                } else {
+                    // Already using left/top positioning, use current visual position
+                    currentX = rect.left
+                    currentY = rect.top
+                }
+                
+                // Calculate drag offset from where the mouse clicked relative to the container's current position
+                dragOffsetX = e.clientX - currentX
+                dragOffsetY = e.clientY - currentY
+                
+                isDragging = true
                 progressContainer.style.cursor = 'grabbing'
                 e.preventDefault()
             }
-            
+
             function drag(e) {
                 if (!isDragging) return
                 e.preventDefault()
                 currentX = e.clientX - dragOffsetX
                 currentY = e.clientY - dragOffsetY
-                
+
                 // Constrain to viewport
                 var maxX = window.innerWidth - progressContainer.offsetWidth
                 var maxY = window.innerHeight - progressContainer.offsetHeight
                 currentX = Math.max(0, Math.min(currentX, maxX))
                 currentY = Math.max(0, Math.min(currentY, maxY))
-                
+
                 progressContainer.style.left = currentX + 'px'
                 progressContainer.style.top = currentY + 'px'
                 progressContainer.style.transform = 'none'
             }
-            
+
             function stopDrag() {
                 if (isDragging) {
                     isDragging = false
                     progressContainer.style.cursor = 'move'
                 }
             }
-            
+
             headerRow.addEventListener('mousedown', startDrag)
             // Also allow dragging from minimized content area (but not buttons)
             minimizedContent.addEventListener('mousedown', function(e) {
-                if (e.target.tagName !== 'BUTTON' && (!e.target.closest || !e.target.closest('button'))) {
+                if (!isInteractiveElement(e.target)) {
+                    startDrag(e)
+                }
+            })
+            // Allow dragging from anywhere in the progress container (padding areas)
+            progressContainer.addEventListener('mousedown', function(e) {
+                if (!isInteractiveElement(e.target)) {
                     startDrag(e)
                 }
             })
@@ -5433,12 +5632,12 @@
                     minimizeBtn.title = 'Minimize'
                 }
             }
-            
+
             minimizeBtn.addEventListener('click', function(e) {
                 e.stopPropagation()
                 toggleMinimize()
             })
-            
+
             minimizedMinimizeBtn.addEventListener('click', function(e) {
                 e.stopPropagation()
                 toggleMinimize()
@@ -5448,8 +5647,18 @@
                 // Check if button says "Close" (export complete) or "Cancel" (still exporting)
                 if (this.textContent === 'Close') {
                     // Just close the modal, don't cancel export
+                    // Use current position if modal was dragged, otherwise center
+                    var computedStyle = window.getComputedStyle(progressContainer)
+                    var currentTransform = computedStyle.transform
+                    var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)'
+                    
                     progressContainer.style.opacity = '0'
-                    progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                    if (hasTransform) {
+                        progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                    } else {
+                        // Modal was dragged, use scale on current position
+                        progressContainer.style.transform = 'scale(0.95)'
+                    }
                     setTimeout(function() {
                         if (progressContainer && progressContainer.parentNode) {
                             progressContainer.parentNode.removeChild(progressContainer)
@@ -5464,8 +5673,18 @@
                     if (btn && btn.progressIndicator) {
                         btn.progressIndicator.cancelled = true
                         // Close progress indicator
+                        // Use current position if modal was dragged, otherwise center
+                        var computedStyle = window.getComputedStyle(btn.progressIndicator.container)
+                        var currentTransform = computedStyle.transform
+                        var hasTransform = currentTransform && currentTransform !== 'none' && currentTransform !== 'matrix(1, 0, 0, 1, 0, 0)'
+                        
                         btn.progressIndicator.container.style.opacity = '0'
-                        btn.progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                        if (hasTransform) {
+                            btn.progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                        } else {
+                            // Modal was dragged, use scale on current position
+                            btn.progressIndicator.container.style.transform = 'scale(0.95)'
+                        }
                         setTimeout(function() {
                             if (btn.progressIndicator && btn.progressIndicator.container.parentNode) {
                                 btn.progressIndicator.container.parentNode.removeChild(btn.progressIndicator.container)
@@ -5518,7 +5737,7 @@
             if (btn && btn.progressIndicator && btn.progressIndicator.cancelled) {
                 return
             }
-            
+
             r = JSON.parse(r)
             if (!r || r.error) {
                 // Remove progress indicator on error
@@ -5536,7 +5755,7 @@
                 if (btn && btn.progressIndicator && btn.progressIndicator.cancelled) {
                     return
                 }
-                
+
                 // Update progress before next chunk
                 if (btn && btn.progressIndicator && btn.progressIndicator.container && btn.progressIndicator.container.parentNode && chatIndex === null) {
                     const chunkNumber = Math.floor(offset / QUERY_BATCH_SIZE) + 1
@@ -5552,7 +5771,7 @@
                 if (btn && btn.progressIndicator && btn.progressIndicator.cancelled) {
                     return
                 }
-                
+
                 // All done - cache the messages
                 chatCache.setChatMessages(uuid, collected)
 
@@ -6166,7 +6385,7 @@
                                     }
                                 }
                             }
-                            
+
                             // Auto-close if enabled (defaults to true if preference not set)
                             if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
                                 setTimeout(function() {

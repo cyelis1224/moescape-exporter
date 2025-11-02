@@ -3808,7 +3808,7 @@
                     }
 
                     var imgContainer = document.createElement('div')
-                    imgContainer.style.cssText = 'position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: ' + colorScheme.cardBackground + '; border-radius: 8px; padding: 0; border: 1px solid ' + colorScheme.border + '; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;'
+                    imgContainer.style.cssText = 'position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;'
 
                     // Store the actual index as a data attribute for reliable lookup
                     if (actualIndex !== -1) {

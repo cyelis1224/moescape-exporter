@@ -1,5 +1,63 @@
 # Change Log - Tavern Chat Downloader
 
+## Version 2.2.9 - Image Viewer Enhancements & UI Refinements
+
+### New Features
+- **Scroll Wheel Zoom**: Added intuitive zoom control for image viewer
+  - Scroll up to zoom in, scroll down to zoom out
+  - Smooth zoom transitions with real-time slider updates
+  - Zoom range: 1x to 5x, matching slider functionality
+  - Zoom slider and value label sync automatically with scroll wheel
+  - Disabled in grid/comparison view to allow normal scrolling
+  - Natural, responsive control for detailed image inspection
+
+### UI/UX Enhancements
+- **Character Icons Layout Refactor**: Improved character icon display in chat list
+  - Icons now right-aligned with reverse order (first character appears last, extending left)
+  - Desktop max-width: 320px (up from 100px) for better visibility
+  - Mobile max-width: 100px for compact mobile layout
+  - Smooth horizontal scrolling with proper fade effects on both edges
+  - First character (now on right) includes padding for alignment
+  - Auto-scrolls to show first character on load
+- **Navigation Arrow Icons**: Replaced text arrows with professional SVG chevron icons
+  - Clean, modern chevron design matching site aesthetics
+  - Consistent 64x64px button size (matching close button)
+  - Proper directional arrows (left points left, right points right)
+  - 24x24px icons with smooth hover effects
+  - Better visual consistency across image viewer controls
+
+### Technical Improvements
+- **Progress Modal Drag Refinements**: Enhanced dragging experience
+  - Dragging now works from anywhere in modal (padding areas, background)
+  - Fixed initial drag jump by properly converting transform-based to pixel positioning
+  - Added `isInteractiveElement()` helper to prevent dragging when clicking buttons/inputs
+  - Improved position conversion timing with forced reflow
+  - Close animations now respect dragged position (no more flying to corner)
+  - Modal close uses `scale(0.95)` if dragged, `translate(-50%, -50%) scale(0.95)` if centered
+
+### Bug Fixes
+- Fixed initial drag jump when first moving progress modals
+- Fixed progress modals "flying off" to top-left corner when closing after being dragged
+- Fixed arrow directions in image viewer navigation buttons (both were pointing wrong direction)
+- Improved drag offset calculation to eliminate position jumping on first click
+- Fixed close animation to use appropriate transform based on modal's current positioning state
+
+### User Experience
+- **Better Image Navigation**: Scroll wheel zoom provides natural, intuitive control
+  - Easy to zoom in for detail inspection without reaching for slider
+  - Works seamlessly with existing zoom and pan controls
+  - Smooth, responsive zoom adjustments
+- **Improved Progress Modal Interaction**: More forgiving and user-friendly dragging
+  - No need to precisely click header - drag from anywhere
+  - Smooth dragging without position jumps
+  - Professional close animations that respect user's positioning
+- **Enhanced Chat List Display**: Better character icon visibility and organization
+  - More space for character icons on desktop
+  - Better visual hierarchy with right-aligned layout
+  - Consistent with reversed character order preference
+
+-----
+
 ## Version 2.2.8 - Auto-Close Settings & Minimized View Enhancements
 
 ### New Features

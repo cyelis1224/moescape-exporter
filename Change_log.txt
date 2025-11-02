@@ -1,5 +1,135 @@
 # Change Log - Tavern Chat Downloader
 
+## Version 2.2.8 - Auto-Close Settings & Minimized View Enhancements
+
+### New Features
+- **Auto-Close Preference Setting**: User-configurable auto-close behavior for progress indicators
+  - Toggle switch in settings modal: "Auto-close Download pop-up"
+  - Pill-style toggle matching metadata toggle design
+  - Defaults to ON (enabled) for new users
+  - Preference saved to localStorage and persists across sessions
+  - Controls both chat export and image download progress indicators
+  - 2-second delay after completion before auto-closing when enabled
+- **Minimized View Close Button**: Quick close access from minimized progress bars
+  - Close button (✕) added after minimize/restore button in minimized view
+  - Available in both chat export and image download progress indicators
+  - Same behavior as full view: closes if complete, cancels if in progress
+  - Users can dismiss completed downloads without restoring to full view
+  - Hover effects match other modal buttons
+
+### UI/UX Enhancements
+- **Settings Toggle Design**: Professional pill-style toggle matching existing UI
+  - Smooth animations when toggling state
+  - Visual state indicators (gradient when ON, dark when OFF)
+  - Consistent with metadata toggle styling in image viewer
+  - Clear label: "Auto-close Download pop-up"
+- **Improved Minimized View**: Enhanced functionality for compact progress display
+  - Close button positioned for easy access
+  - Maintains all functionality in minimized state
+  - Better workflow for monitoring multiple downloads
+
+### Technical Improvements
+- **Preference Management**: Smart default handling for user preferences
+  - Defaults to auto-close enabled until user explicitly sets preference
+  - Uses `!== 'false'` check to allow undefined/null to default to true
+  - Proper localStorage integration for persistence
+  - Preference applied consistently across all export formats and download types
+- **Auto-Close Implementation**: Comprehensive coverage of all completion scenarios
+  - Works for all export formats (txt, json, jsonl-st, jsonl-openai, html)
+  - Works for image batch downloads
+  - Handles both main completion paths and fallback completion paths
+  - Graceful handling of removed containers during auto-close delay
+
+### User Experience
+- **Flexible Progress Monitoring**: Choose when progress indicators close
+  - Auto-close enabled by default for streamlined workflow
+  - Easy to disable in settings if you prefer manual control
+  - No interruption to workflow - modals auto-dismiss when done
+- **Convenient Minimized Controls**: Full functionality in compact view
+  - Close completed downloads directly from minimized bar
+  - No need to restore to full view just to close
+  - Faster workflow for managing multiple concurrent downloads
+- **User Choice**: Settings respect individual preferences
+  - One-time configuration in settings modal
+  - Preference remembered across browser sessions
+  - Can be changed anytime via settings gear icon
+
+-----
+
+## Version 2.2.7 - Settings Modal & Enhanced Progress Indicators
+
+### New Features
+- **Settings Modal**: New settings panel accessible from export modal
+  - Gear icon button positioned next to close button in export modal
+  - Modal includes header with "Settings" title and close button
+  - Checkbox option placeholder with "(coming soon)" indicator
+  - Save and Close buttons at bottom for future configuration
+  - Full keyboard support (ESC to close)
+  - Backdrop click to dismiss
+  - Smooth fade animations matching other modals
+- **Enhanced Progress Indicators**: Movable and minimizable progress modals
+  - **Chat Export Progress**: Upgraded with drag-and-drop functionality
+    - Click and drag header or minimized bar to reposition anywhere on screen
+    - Minimize button to switch between full and compact views
+    - Minimized bar shows condensed progress (current/total files and small progress bar)
+    - Cancel button changes to "Close" when export completes
+    - Removed auto-close functionality - modal stays open until manually closed
+  - **Image Download Progress**: Same enhancements as chat export
+    - Fully draggable modal that can be repositioned
+    - Minimize/restore toggle for non-intrusive monitoring
+    - Cancel button properly interrupts downloads and closes modal
+    - Button changes to "Close" when all downloads complete
+    - No auto-close - user controls when to dismiss
+
+### UI/UX Enhancements
+- **Consistent Close Button Styling**: Image popup close button matches export modal
+  - Same border-radius (8px), font-weight (500), and transitions
+  - Identical hover effects with background color changes
+  - Professional appearance across all modals
+- **Settings Button Integration**: Seamless addition to export modal header
+  - Gear icon SVG matches site theme colors
+  - Hover effects consistent with other header buttons
+  - Positioned with proper spacing from close button
+  - Clear visual hierarchy and accessibility
+
+### Technical Improvements
+- **Progress Indicator State Management**: Robust handling of multiple exports
+  - Fixed issue where progress indicator only appeared on first download
+  - Proper cleanup and state reset for subsequent exports
+  - Checks for container existence before creating new indicators
+  - Handles stale references and removed DOM elements gracefully
+- **Modal Z-Index Management**: Proper layering of modals
+  - Settings modal (z-index: 120) appears above export modal (z-index: 110)
+  - Correct modal hierarchy for nested dialogs
+  - Clean event handling prevents conflicts between modals
+- **Drag Functionality**: Smooth drag-and-drop implementation
+  - Constrains dragging to viewport boundaries
+  - Cursor changes to indicate draggable areas (move/grabbing)
+  - Prevents dragging when clicking on interactive buttons
+  - Touch-friendly on mobile devices
+
+### Bug Fixes
+- Fixed progress indicator not appearing on subsequent downloads after first export
+- Fixed cancellation not properly stopping image downloads
+- Fixed stale references preventing new progress indicators from being created
+- Ensured progress updates only occur when containers are still in DOM
+
+### User Experience
+- **Better Progress Monitoring**: Non-intrusive progress tracking
+  - Minimize progress modals to monitor downloads without blocking workflow
+  - Reposition modals to preferred screen locations
+  - Clear completion feedback with button state changes
+- **Professional Settings Interface**: Foundation for future configuration options
+  - Clean, organized modal ready for additional settings
+  - Consistent with existing modal design language
+  - Easy to extend with new options as needed
+- **Consistent Visual Design**: Unified styling across all close buttons
+  - Same look and feel whether in export modal or image popup
+  - Professional appearance that matches site aesthetics
+  - Clear visual feedback on all interactive elements
+
+-----
+
 ## Version 2.2.6 - Grid View Fade Transitions & Smart Swipe Navigation
 
 ### New Features

@@ -3,7 +3,7 @@
 // @namespace    Holly
 // @author       Holly
 // @collaborator Dagyr
-// @version      2.2.7
+// @version      2.2.8
 // @description  Preserve your Tavern conversations. Supports both Moescape and Yodayo.
 // @match        https://yodayo.com/*
 // @match        https://moescape.ai/*
@@ -669,7 +669,7 @@
         /* Mobile touch optimizations */
         @media (max-width: 768px) {
             /* Larger touch targets for buttons */
-            button, .holly-button {
+            .holly-button {
                 min-height: 44px !important;
                 min-width: 44px !important;
                 padding: 12px 16px !important;
@@ -689,7 +689,7 @@
                 min-height: 44px !important;
             }
 
-            #holly-metadata-toggle-container > div:first-child {
+            .holly-metadata-toggle-switch {
                 min-width: 48px !important;
                 min-height: 26px !important;
             }
@@ -1254,6 +1254,173 @@
         })
 
     // ============================================================================
+    // SETTINGS MODAL
+    // ============================================================================
+    function showSettingsModal() {
+        // Create backdrop
+        var settingsCover = document.createElement('div')
+        settingsCover.style.cssText = 'background-color: rgba(0, 0, 0, 0); position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: 120; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: background-color 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;'
+
+        // Create modal popup
+        var settingsPopup = document.createElement('div')
+        settingsPopup.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); width: 90vw; max-width: 500px; height: fit-content; background-color: ' + colorScheme.background + '; border-radius: 16px; padding: clamp(16px, 3vw, 32px); display: flex; flex-direction: column; border: 1px solid ' + colorScheme.border + '; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;'
+
+        // Create header
+        var header = document.createElement('div')
+        header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: clamp(16px, 3vw, 24px);'
+        
+        var title = document.createElement('h2')
+        title.textContent = 'Settings'
+        title.style.cssText = 'font-size: clamp(20px, 5vw, 28px); font-weight: 600; color: ' + colorScheme.textPrimary + '; margin: 0;'
+        
+        var closeBtn = document.createElement('button')
+        closeBtn.innerHTML = '✕'
+        closeBtn.style.cssText = 'background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 8px; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px); cursor: pointer; font-weight: 500; transition: background-color 0.2s; font-size: clamp(12px, 3vw, 14px);'
+        closeBtn.addEventListener('mouseenter', function() { 
+            this.style.backgroundColor = colorScheme.hoverBackground; 
+        })
+        closeBtn.addEventListener('mouseleave', function() { 
+            this.style.backgroundColor = colorScheme.cardBackground; 
+        })
+        
+        header.appendChild(title)
+        header.appendChild(closeBtn)
+        settingsPopup.appendChild(header)
+
+        // Create toggle container
+        var toggleContainer = document.createElement('div')
+        toggleContainer.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: clamp(16px, 3vw, 24px); padding: clamp(12px, 2.5vw, 16px); background: ' + colorScheme.cardBackground + '; border-radius: 8px; border: 1px solid ' + colorScheme.border + ';'
+        
+        // Create toggle switch
+        var toggleSwitch = document.createElement('div')
+        toggleSwitch.className = 'holly-auto-close-toggle-switch'
+        toggleSwitch.style.cssText = 'width: 48px; height: 26px; background: ' + colorScheme.cardBackground + '; border: 2px solid ' + colorScheme.border + '; border-radius: 13px; position: relative; cursor: pointer; transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); flex-shrink: 0;'
+        
+        var toggleSlider = document.createElement('div')
+        toggleSlider.style.cssText = 'width: 20px; height: 20px; background: ' + colorScheme.textSecondary + '; border-radius: 50%; position: absolute; top: 1px; left: 2px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.4);'
+        
+        toggleSwitch.appendChild(toggleSlider)
+        
+        // Create label
+        var label = document.createElement('span')
+        label.textContent = 'Auto-close Download pop-up'
+        label.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-size: clamp(14px, 3vw, 16px); cursor: pointer; user-select: none; flex: 1;'
+        
+        toggleContainer.appendChild(toggleSwitch)
+        toggleContainer.appendChild(label)
+        settingsPopup.appendChild(toggleContainer)
+        
+        // Load toggle state from localStorage (default to true - auto-close enabled until user sets preference)
+        var autoCloseEnabled = localStorage.getItem('hollyAutoCloseProgress') !== 'false'
+        
+        // Set initial toggle state
+        function updateToggleState(enabled) {
+            if (enabled) {
+                toggleSwitch.style.background = colorScheme.gradient
+                toggleSlider.style.left = '24px'
+                toggleSlider.style.background = '#ffffff'
+            } else {
+                toggleSwitch.style.background = colorScheme.cardBackground
+                toggleSlider.style.left = '2px'
+                toggleSlider.style.background = colorScheme.textSecondary
+            }
+        }
+        updateToggleState(autoCloseEnabled)
+        
+        // Toggle function
+        var toggleAutoClose = function() {
+            autoCloseEnabled = !autoCloseEnabled
+            updateToggleState(autoCloseEnabled)
+        }
+        
+        toggleSwitch.addEventListener('click', toggleAutoClose)
+        label.addEventListener('click', toggleAutoClose)
+
+        // Create button container at bottom
+        var buttonContainer = document.createElement('div')
+        buttonContainer.style.cssText = 'display: flex; gap: 12px; justify-content: flex-end; margin-top: auto; padding-top: clamp(16px, 3vw, 24px);'
+        
+        var saveBtn = document.createElement('button')
+        saveBtn.textContent = 'Save'
+        saveBtn.style.cssText = 'background: ' + colorScheme.gradient + '; color: black; border: none; border-radius: 8px; padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px); cursor: pointer; font-weight: 500; font-size: clamp(14px, 3vw, 16px); transition: opacity 0.2s;'
+        saveBtn.addEventListener('mouseenter', function() { 
+            this.style.opacity = '0.9'; 
+        })
+        saveBtn.addEventListener('mouseleave', function() { 
+            this.style.opacity = '1'; 
+        })
+        
+        var closeButton = document.createElement('button')
+        closeButton.textContent = 'Close'
+        closeButton.style.cssText = 'background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 8px; padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px); cursor: pointer; font-weight: 500; font-size: clamp(14px, 3vw, 16px); transition: background-color 0.2s;'
+        closeButton.addEventListener('mouseenter', function() { 
+            this.style.backgroundColor = colorScheme.hoverBackground; 
+        })
+        closeButton.addEventListener('mouseleave', function() { 
+            this.style.backgroundColor = colorScheme.cardBackground; 
+        })
+        
+        buttonContainer.appendChild(saveBtn)
+        buttonContainer.appendChild(closeButton)
+        settingsPopup.appendChild(buttonContainer)
+
+        settingsCover.appendChild(settingsPopup)
+        document.body.appendChild(settingsCover)
+
+        // Function to close settings modal
+        var closeSettingsModal = function() {
+            settingsCover.style.backgroundColor = 'rgba(0, 0, 0, 0)'
+            settingsCover.style.backdropFilter = 'blur(0px)'
+            settingsCover.style.webkitBackdropFilter = 'blur(0px)'
+            settingsPopup.style.opacity = '0'
+            settingsPopup.style.transform = 'translate(-50%, -50%) scale(0.95)'
+            
+            setTimeout(function() {
+                if (settingsCover && settingsCover.parentNode) {
+                    settingsCover.parentNode.removeChild(settingsCover)
+                }
+            }, 300)
+        }
+
+        // Add click handlers
+        closeBtn.addEventListener('click', closeSettingsModal)
+        closeButton.addEventListener('click', closeSettingsModal)
+        settingsCover.addEventListener('click', function(e) {
+            if (e.target === settingsCover) {
+                closeSettingsModal()
+            }
+        })
+
+        // ESC key handler
+        var escHandler = function(e) {
+            if (e.key === 'Escape') {
+                closeSettingsModal()
+                document.removeEventListener('keydown', escHandler)
+            }
+        }
+        document.addEventListener('keydown', escHandler)
+
+        // Save button handler
+        saveBtn.addEventListener('click', function() {
+            // Save auto-close preference to localStorage
+            localStorage.setItem('hollyAutoCloseProgress', autoCloseEnabled ? 'true' : 'false')
+            console.log('Settings saved. Auto-close enabled:', autoCloseEnabled)
+            closeSettingsModal()
+        })
+
+        // Trigger animation
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                settingsCover.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+                settingsCover.style.backdropFilter = 'blur(4px)'
+                settingsCover.style.webkitBackdropFilter = 'blur(4px)'
+                settingsPopup.style.opacity = '1'
+                settingsPopup.style.transform = 'translate(-50%, -50%) scale(1)'
+            })
+        })
+    }
+
+    // ============================================================================
     // CHAT LIST UI
     // ============================================================================
     function showChatsToDownload(chats)
@@ -1300,22 +1467,47 @@
             }, 300)
         }
         
+        // Settings button (gear icon)
+        var settingsButton = document.createElement('button')
+        settingsButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path></svg>'
+        settingsButton.title = 'Settings'
+        settingsButton.style.cssText = 'position: absolute; top: clamp(12px, 2vw, 24px); right: clamp(64px, 12vw, 96px); background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; padding: clamp(6px, 1.5vw, 8px); border-radius: 8px; border: none; cursor: pointer; font-weight: 500; transition: background-color 0.2s, color 0.2s; display: flex; align-items: center; justify-content: center; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px);'
+        settingsButton.addEventListener('mouseenter', function() { 
+            this.style.backgroundColor = colorScheme.hoverBackground;
+            this.style.color = colorScheme.hoverText;
+        })
+        settingsButton.addEventListener('mouseleave', function() { 
+            this.style.backgroundColor = colorScheme.cardBackground;
+            this.style.color = colorScheme.textPrimary;
+        })
+        settingsButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showSettingsModal();
+        })
+        popup.appendChild(settingsButton)
+
         var closeButton = document.createElement('button')
-        closeButton.innerText = 'X'
+        closeButton.innerHTML = '✕'
         closeButton.addEventListener('click', closeModal)
-        closeButton.style.cssText = 'position: absolute; top: clamp(12px, 2vw, 24px); right: clamp(12px, 2vw, 24px); background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px); border-radius: 8px; border: none; cursor: pointer; font-weight: 500; transition: background-color 0.2s; font-size: clamp(12px, 3vw, 14px);'
-        closeButton.addEventListener('mouseenter', function() { this.style.backgroundColor = colorScheme.hoverBackground; })
-        closeButton.addEventListener('mouseleave', function() { this.style.backgroundColor = colorScheme.cardBackground; })
+        closeButton.style.cssText = 'position: absolute; top: clamp(12px, 2vw, 24px); right: clamp(12px, 2vw, 24px); background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 14px); border-radius: 8px; border: none; cursor: pointer; font-weight: 500; transition: background-color 0.2s, color 0.2s; font-size: clamp(12px, 3vw, 14px); width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px);'
+        closeButton.addEventListener('mouseenter', function() { 
+            this.style.backgroundColor = colorScheme.hoverBackground;
+            this.style.color = colorScheme.textSecondary;
+        })
+        closeButton.addEventListener('mouseleave', function() { 
+            this.style.backgroundColor = colorScheme.cardBackground;
+            this.style.color = colorScheme.textPrimary;
+        })
         popup.appendChild(closeButton)
 
         // Controls row (format + sort)
         var controlsRow = document.createElement('div')
         controlsRow.className = 'holly-controls-row'
-        controlsRow.style.cssText = 'display: flex; gap: 12px; align-items: center; margin-bottom: 0px; flex-wrap: wrap;'
+        controlsRow.style.cssText = 'display: flex; gap: 12px; align-items: center; margin-bottom: 0px; flex-wrap: wrap; border-bottom: 1px solid rgb(48, 52, 57); margin-bottom: 4px;'
 
         var formatSelect = document.createElement('select')
         formatSelect.setAttribute('id', 'holly_download_format')
-        formatSelect.style.cssText = 'width: 260px; font-weight: 500; margin-bottom: 20px; background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 8px; padding: 8px 12px; font-size: 14px;'
+        formatSelect.style.cssText = 'width: 260px; font-weight: 500; margin-bottom: 0px; background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 8px; padding: 8px 12px; font-size: 14px;'
         var formatOptions = {
             'txt': 'Download as TXT',
             'jsonl-st': 'Download as JSONL (SillyTavern)',
@@ -2137,7 +2329,7 @@
 
         // Bottom footer with format selector
         const footer = document.createElement('div')
-        footer.style.cssText = `display: flex; justify-content: flex-start; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; margin-top: 8px; align-items: baseline;`
+        footer.style.cssText = `display: flex; justify-content: flex-start; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid ${colorScheme.border}; margin-top: 8px; align-items: baseline; align-items: center;`
         const formatLabel = document.createElement('span')
         formatLabel.textContent = 'Download format:'
         formatLabel.style.cssText = `color: ${colorScheme.textSecondary}; font-size: 12px;`
@@ -2542,10 +2734,10 @@
                 setTimeout(() => { navLocked = false }, 180)
             }
 
-            // Create close button (circle with X)
+            // Create close button (square with X)
             const closeBtn = document.createElement('button')
             closeBtn.innerHTML = '✕'
-            closeBtn.style.cssText = `position: fixed; top: 20px; right: 20px; width: 48px; height: 48px; border-radius: 50%; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 24px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: bold;`
+            closeBtn.style.cssText = `position: fixed; top: 20px; right: 20px; width: 64px; height: 64px; border-radius: 12px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 24px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: bold;`
             closeBtn.addEventListener('click', ImageManager.closeImageViewer)
             closeBtn.addEventListener('mouseenter', function() {
                 this.style.backgroundColor = colorScheme.hoverBackground
@@ -2711,6 +2903,7 @@
 
         // Create toggle switch
         const toggleSwitch = document.createElement('div')
+        toggleSwitch.className = 'holly-metadata-toggle-switch'
         toggleSwitch.style.cssText = `width: 48px; height: 26px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; border-radius: 13px; position: relative; cursor: pointer; transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);`
 
         const toggleSlider = document.createElement('div')
@@ -2829,7 +3022,7 @@
         const leftArrow = document.createElement('button')
         leftArrow.innerHTML = '←'
         leftArrow.className = 'image-viewer-arrow-left'
-        leftArrow.style.cssText = `position: fixed; top: 50%; left: 20px; transform: translateY(-50%); width: 56px; height: 56px; border-radius: 50%; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 28px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === 0 ? '0.3' : '1'};`
+        leftArrow.style.cssText = `position: fixed; top: 50%; left: 20px; transform: translateY(-50%); width: 56px; height: 56px; border-radius: 12px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 28px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === 0 ? '0.3' : '1'};`
         leftArrow.addEventListener('click', function(e) {
             e.stopPropagation()
             navigate(-1)
@@ -2848,7 +3041,7 @@
         const rightArrow = document.createElement('button')
         rightArrow.innerHTML = '→'
         rightArrow.className = 'image-viewer-arrow-right'
-        rightArrow.style.cssText = `position: fixed; top: 50%; right: 20px; transform: translateY(-50%); width: 56px; height: 56px; border-radius: 50%; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 28px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === imageViewerImages.length - 1 ? '0.3' : '1'};`
+        rightArrow.style.cssText = `position: fixed; top: 50%; right: 20px; transform: translateY(-50%); width: 56px; height: 56px; border-radius: 12px; background: ${colorScheme.cardBackground}; border: 2px solid ${colorScheme.border}; color: ${colorScheme.textPrimary}; font-size: 28px; cursor: pointer; z-index: 1000002; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: ${index === imageViewerImages.length - 1 ? '0.3' : '1'};`
         rightArrow.addEventListener('click', function(e) {
             e.stopPropagation()
             navigate(1)
@@ -4080,9 +4273,9 @@
                 '<div style="display: flex; flex-direction: column; padding: clamp(12px, 3vw, 20px); border-bottom: 1px solid ' + colorScheme.border + '; flex-shrink: 0; gap: clamp(12px, 3vw, 16px);">' +
                     '<div style="display: flex; justify-content: space-between; align-items: center;">' +
                         '<div style="color: ' + colorScheme.textPrimary + '; font-weight: 600; font-size: clamp(16px, 4vw, 24px);">Chat Images (<span id="image-count">' + totalImages + '</span>)</div>' +
-                        '<button id="close-image-modal" style="background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 6px; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px); cursor: pointer; font-size: clamp(12px, 3vw, 14px); white-space: nowrap; flex-shrink: 0;">X</button>' +
+                        '<button id="close-image-modal" style="width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 8px; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 14px); cursor: pointer; font-size: clamp(12px, 3vw, 14px); font-weight: 500; transition: background-color 0.2s; white-space: nowrap; flex-shrink: 0;">✕</button>' +
                     '</div>' +
-                    '<div style="display: flex; align-items: center; gap: clamp(8px, 2vw, 12px); flex-wrap: wrap;">' +
+                    '<div style="display: flex; align-items: center; gap: clamp(8px, 2vw, 12px); flex-wrap: nowrap;">' +
                         '<select id="image-filter" style="background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 6px; padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 14px); font-size: clamp(12px, 3vw, 14px); cursor: pointer; white-space: nowrap;">' +
                             '<option value="all">All Images</option>' +
                             '<option value="/image you">/image you</option>' +
@@ -4093,7 +4286,7 @@
                             '<option value="Background Photo">Backgrounds</option>' +
                         '</select>' +
                         '<button id="select-all-btn" style="background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 6px; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px); font-size: clamp(12px, 3vw, 14px); cursor: pointer; transition: background-color 0.2s; white-space: nowrap;">Select All</button>' +
-                        '<button id="download-selected-btn" style="background: ' + colorScheme.gradient + '; color: black; border: none; border-radius: 6px; padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px); font-size: clamp(12px, 3vw, 14px); cursor: pointer; transition: all 0.2s; white-space: nowrap;">Download</button>' +
+                        '<button id="download-selected-btn" title="Download selected images" style="background: ' + colorScheme.gradient + '; color: black; border: none; border-radius: 6px; padding: clamp(6px, 1.5vw, 8px); width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7,10 12,15 17,10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>' +
                     '</div>' +
                 '</div>' +
                 '<div id="images-grid" style="display: flex; gap: clamp(8px, 2vw, 16px); padding: clamp(12px, 3vw, 20px); flex-wrap: wrap; overflow-y: auto; flex: 1; min-height: 0;">' +
@@ -4111,7 +4304,7 @@
                         '<button id="prev-page-btn" style="background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 4px; padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 12px); font-size: clamp(10px, 2.5vw, 12px); cursor: pointer; transition: background-color 0.2s; white-space: nowrap;"><</button>' +
                         '<span id="page-info" style="color: ' + colorScheme.textPrimary + '; font-size: clamp(10px, 2.5vw, 12px); white-space: nowrap;">1-20 of ' + totalImages + '</span>' +
                         '<button id="next-page-btn" style="background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 4px; padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 12px); font-size: clamp(10px, 2.5vw, 12px); cursor: pointer; transition: background-color 0.2s; white-space: nowrap;">></button>' +
-                        '<span style="color: ' + colorScheme.textSecondary + '; font-size: clamp(10px, 2.5vw, 12px); white-space: nowrap;">Go to:</span>' +
+                        '<span style="color: ' + colorScheme.textSecondary + '; font-size: clamp(10px, 2.5vw, 12px); white-space: nowrap;"></span>' +
                         '<select id="page-jump-select" style="background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 4px; padding: clamp(2px, 0.5vw, 4px) clamp(6px, 1.5vw, 8px); font-size: clamp(10px, 2.5vw, 12px); cursor: pointer;">' +
                         '</select>' +
                     '</div>' +
@@ -4123,6 +4316,13 @@
                 var closeBtn = imagePopup.querySelector('#close-image-modal');
                 if (closeBtn) {
                     closeBtn.addEventListener('click', function(){ self.closeImagePopup(); });
+                    // Add hover effects to match export modal close button
+                    closeBtn.addEventListener('mouseenter', function() { 
+                        this.style.backgroundColor = colorScheme.hoverBackground; 
+                    });
+                    closeBtn.addEventListener('mouseleave', function() { 
+                        this.style.backgroundColor = colorScheme.cardBackground; 
+                    });
                 }
 
                 var filterSelect = imagePopup.querySelector('#image-filter');
@@ -4240,54 +4440,383 @@
                         }
 
                         // Show loading state
-                        var originalText = this.textContent;
                         var btn = this;
-                        btn.textContent = 'Downloading...';
+                        var svg = btn.querySelector('svg');
+                        var originalTitle = btn.title;
+                        btn.title = 'Downloading...';
                         btn.disabled = true;
+                        if (svg) svg.style.opacity = '0.5';
+
+                        // Create progress indicator for image downloads
+                        var progressContainer = document.createElement('div');
+                        progressContainer.className = 'holly-export-progress';
+                        progressContainer.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000010; background: ' + colorScheme.cardBackground + '; border: 1px solid ' + colorScheme.border + '; border-radius: 12px; padding: 20px; min-width: 300px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: move; user-select: none;';
+
+                        // Create header with title and minimize button
+                        var headerRow = document.createElement('div');
+                        headerRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: move;';
+                        
+                        var progressTitle = document.createElement('div');
+                        progressTitle.textContent = 'Downloading Images...';
+                        progressTitle.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-weight: 600; font-size: 16px; flex: 1;';
+
+                        // Create minimize button
+                        var minimizeBtn = document.createElement('button');
+                        minimizeBtn.innerHTML = '−';
+                        minimizeBtn.style.cssText = 'background: transparent; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 4px; padding: 4px 8px; font-size: 18px; cursor: pointer; transition: all 0.2s; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; line-height: 1;';
+                        minimizeBtn.title = 'Minimize';
+                        minimizeBtn.addEventListener('mouseenter', function() {
+                            this.style.backgroundColor = colorScheme.hoverBackground;
+                            this.style.color = colorScheme.hoverText;
+                        });
+                        minimizeBtn.addEventListener('mouseleave', function() {
+                            this.style.backgroundColor = 'transparent';
+                            this.style.color = colorScheme.textPrimary;
+                        });
+
+                        headerRow.appendChild(progressTitle);
+                        headerRow.appendChild(minimizeBtn);
+
+                        var progressBarContainer = document.createElement('div');
+                        progressBarContainer.style.cssText = 'width: 100%; height: 8px; background: ' + colorScheme.border + '; border-radius: 4px; overflow: hidden; margin-bottom: 8px;';
+
+                        var progressBar = document.createElement('div');
+                        progressBar.style.cssText = 'height: 100%; background: ' + colorScheme.gradient + '; width: 0%; transition: width 0.3s ease; border-radius: 4px;';
+
+                        var progressText = document.createElement('div');
+                        progressText.className = 'holly-progress-text';
+                        progressText.style.cssText = 'color: ' + colorScheme.textSecondary + '; font-size: 12px; text-align: center; margin-bottom: 12px;';
+                        progressText.textContent = 'Preparing download...';
+
+                        // Create cancel button
+                        var cancelBtn = document.createElement('button');
+                        cancelBtn.textContent = 'Cancel';
+                        cancelBtn.style.cssText = 'background: ' + colorScheme.border + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 6px; padding: 8px 16px; font-size: 14px; cursor: pointer; transition: all 0.2s; width: 100%; margin-top: 8px;';
+                        cancelBtn.addEventListener('mouseenter', function() {
+                            this.style.backgroundColor = colorScheme.hoverBackground;
+                            this.style.borderColor = colorScheme.hoverText;
+                        });
+                        cancelBtn.addEventListener('mouseleave', function() {
+                            this.style.backgroundColor = colorScheme.border;
+                            this.style.borderColor = colorScheme.border;
+                        });
+
+                        // Create full content container (shown when not minimized)
+                        var fullContent = document.createElement('div');
+                        fullContent.className = 'holly-progress-full-content';
+                        fullContent.style.cssText = 'display: block;';
+                        fullContent.appendChild(progressBarContainer);
+                        fullContent.appendChild(progressText);
+                        fullContent.appendChild(cancelBtn);
+
+                        // Create minimized content container (shown when minimized)
+                        var minimizedContent = document.createElement('div');
+                        minimizedContent.className = 'holly-progress-minimized-content';
+                        minimizedContent.style.cssText = 'display: none; align-items: center; gap: 12px; cursor: move;';
+                        
+                        // Minimized progress bar
+                        var minimizedProgressBarContainer = document.createElement('div');
+                        minimizedProgressBarContainer.style.cssText = 'flex: 1; height: 6px; background: ' + colorScheme.border + '; border-radius: 3px; overflow: hidden;';
+                        var minimizedProgressBar = document.createElement('div');
+                        minimizedProgressBar.style.cssText = 'height: 100%; background: ' + colorScheme.gradient + '; width: 0%; transition: width 0.3s ease; border-radius: 3px;';
+                        minimizedProgressBarContainer.appendChild(minimizedProgressBar);
+                        
+                        // Minimized count text
+                        var minimizedCountText = document.createElement('div');
+                        minimizedCountText.className = 'holly-progress-minimized-count';
+                        minimizedCountText.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-size: 12px; font-weight: 500; white-space: nowrap; min-width: 60px; text-align: center;';
+                        minimizedCountText.textContent = '0/0';
+                        
+                        // Minimized minimize button (to expand)
+                        var minimizedMinimizeBtn = document.createElement('button');
+                        minimizedMinimizeBtn.innerHTML = '+';
+                        minimizedMinimizeBtn.style.cssText = 'background: transparent; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 4px; padding: 4px 8px; font-size: 16px; cursor: pointer; transition: all 0.2s; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0;';
+                        minimizedMinimizeBtn.title = 'Restore';
+                        minimizedMinimizeBtn.addEventListener('mouseenter', function() {
+                            this.style.backgroundColor = colorScheme.hoverBackground;
+                            this.style.color = colorScheme.hoverText;
+                        });
+                        minimizedMinimizeBtn.addEventListener('mouseleave', function() {
+                            this.style.backgroundColor = 'transparent';
+                            this.style.color = colorScheme.textPrimary;
+                        });
+                        
+                        // Minimized close button (✕)
+                        var minimizedCloseBtn = document.createElement('button');
+                        minimizedCloseBtn.innerHTML = '✕';
+                        minimizedCloseBtn.style.cssText = 'background: transparent; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 4px; padding: 4px 8px; font-size: 16px; cursor: pointer; transition: all 0.2s; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0;';
+                        minimizedCloseBtn.title = 'Close';
+                        minimizedCloseBtn.addEventListener('mouseenter', function() {
+                            this.style.backgroundColor = colorScheme.hoverBackground;
+                            this.style.color = colorScheme.hoverText;
+                        });
+                        minimizedCloseBtn.addEventListener('mouseleave', function() {
+                            this.style.backgroundColor = 'transparent';
+                            this.style.color = colorScheme.textPrimary;
+                        });
+                        minimizedCloseBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            // Use same logic as cancelBtn - check if it says "Close" or "Cancel"
+                            if (cancelBtn.textContent === 'Close') {
+                                // Just close the modal
+                                progressContainer.style.opacity = '0';
+                                progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                setTimeout(function() {
+                                    if (progressContainer && progressContainer.parentNode) {
+                                        progressContainer.parentNode.removeChild(progressContainer);
+                                    }
+                                }, 300);
+                                // Reset button state
+                                btn.title = originalTitle;
+                                btn.disabled = false;
+                                if (svg) svg.style.opacity = '1';
+                            } else {
+                                // Cancel downloads in progress
+                                cancelState.cancelled = true;
+                                // Close progress indicator
+                                progressContainer.style.opacity = '0';
+                                progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                setTimeout(function() {
+                                    if (progressContainer && progressContainer.parentNode) {
+                                        progressContainer.parentNode.removeChild(progressContainer);
+                                    }
+                                }, 300);
+                                // Reset button state
+                                btn.title = originalTitle;
+                                btn.disabled = false;
+                                if (svg) svg.style.opacity = '1';
+                            }
+                        });
+
+                        minimizedContent.appendChild(minimizedProgressBarContainer);
+                        minimizedContent.appendChild(minimizedCountText);
+                        minimizedContent.appendChild(minimizedMinimizeBtn);
+                        minimizedContent.appendChild(minimizedCloseBtn);
+
+                        progressBarContainer.appendChild(progressBar);
+                        progressContainer.appendChild(headerRow);
+                        progressContainer.appendChild(fullContent);
+                        progressContainer.appendChild(minimizedContent);
+                        progressContainer.style.opacity = '0';
+                        document.body.appendChild(progressContainer);
+
+                        // Drag functionality
+                        var isDragging = false;
+                        var dragOffsetX = 0;
+                        var dragOffsetY = 0;
+                        var currentX = 0;
+                        var currentY = 0;
+                        
+                        function startDrag(e) {
+                            // Don't start drag if clicking on buttons
+                            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                                return;
+                            }
+                            isDragging = true;
+                            var rect = progressContainer.getBoundingClientRect();
+                            dragOffsetX = e.clientX - rect.left;
+                            dragOffsetY = e.clientY - rect.top;
+                            progressContainer.style.cursor = 'grabbing';
+                            e.preventDefault();
+                        }
+                        
+                        function drag(e) {
+                            if (!isDragging) return;
+                            e.preventDefault();
+                            currentX = e.clientX - dragOffsetX;
+                            currentY = e.clientY - dragOffsetY;
+                            
+                            // Constrain to viewport
+                            var maxX = window.innerWidth - progressContainer.offsetWidth;
+                            var maxY = window.innerHeight - progressContainer.offsetHeight;
+                            currentX = Math.max(0, Math.min(currentX, maxX));
+                            currentY = Math.max(0, Math.min(currentY, maxY));
+                            
+                            progressContainer.style.left = currentX + 'px';
+                            progressContainer.style.top = currentY + 'px';
+                            progressContainer.style.transform = 'none';
+                        }
+                        
+                        function stopDrag() {
+                            if (isDragging) {
+                                isDragging = false;
+                                progressContainer.style.cursor = 'move';
+                            }
+                        }
+                        
+                        headerRow.addEventListener('mousedown', startDrag);
+                        // Also allow dragging from minimized content area (but not buttons)
+                        minimizedContent.addEventListener('mousedown', function(e) {
+                            if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                                startDrag(e);
+                            }
+                        });
+                        document.addEventListener('mousemove', drag);
+                        document.addEventListener('mouseup', stopDrag);
+
+                        // Minimize functionality
+                        var isMinimized = false;
+                        function toggleMinimize() {
+                            isMinimized = !isMinimized;
+                            if (isMinimized) {
+                                // Switch to minimized view
+                                fullContent.style.display = 'none';
+                                minimizedContent.style.display = 'flex';
+                                headerRow.style.display = 'none'; // Hide header in minimized mode
+                                progressContainer.style.minWidth = '250px';
+                                progressContainer.style.width = 'auto';
+                                progressContainer.style.padding = '6px 10px';
+                                minimizeBtn.innerHTML = '+';
+                                minimizeBtn.title = 'Restore';
+                            } else {
+                                // Switch to full view
+                                fullContent.style.display = 'block';
+                                minimizedContent.style.display = 'none';
+                                headerRow.style.display = 'flex'; // Show header in full mode
+                                progressContainer.style.minWidth = '300px';
+                                progressContainer.style.width = 'auto';
+                                progressContainer.style.padding = '20px';
+                                minimizeBtn.innerHTML = '−';
+                                minimizeBtn.title = 'Minimize';
+                            }
+                        }
+                        
+                        minimizeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            toggleMinimize();
+                        });
+                        
+                        minimizedMinimizeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            toggleMinimize();
+                        });
+
+                        // Fade in animation
+                        requestAnimationFrame(function() {
+                            requestAnimationFrame(function() {
+                                progressContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                                progressContainer.style.opacity = '1';
+                            });
+                        });
+
+                        // Cancel flag for image downloads (use object reference so closure can access it)
+                        var cancelState = { cancelled: false };
+                        cancelBtn.addEventListener('click', function() {
+                            // Check if button says "Close" (downloads complete) or "Cancel" (still downloading)
+                            if (this.textContent === 'Close') {
+                                // Just close the modal, don't cancel downloads
+                                progressContainer.style.opacity = '0';
+                                progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                setTimeout(function() {
+                                    if (progressContainer && progressContainer.parentNode) {
+                                        progressContainer.parentNode.removeChild(progressContainer);
+                                    }
+                                }, 300);
+                                // Reset button state
+                                btn.title = originalTitle;
+                                btn.disabled = false;
+                                if (svg) svg.style.opacity = '1';
+                            } else {
+                                // Cancel downloads in progress
+                                cancelState.cancelled = true;
+                                // Close progress indicator
+                                progressContainer.style.opacity = '0';
+                                progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                setTimeout(function() {
+                                    if (progressContainer && progressContainer.parentNode) {
+                                        progressContainer.parentNode.removeChild(progressContainer);
+                                    }
+                                }, 300);
+                                // Reset button state
+                                btn.title = originalTitle;
+                                btn.disabled = false;
+                                if (svg) svg.style.opacity = '1';
+                            }
+                        });
 
                         // Download sequential batches so we can use async/await in ES5
-                        (function(){
+                        (function(btnRef, svgRef, originalTitleRef, progressContainerRef, progressBarRef, progressTextRef, cancelStateRef, minimizedProgressBarRef, minimizedCountTextRef, cancelBtnRef){
                             var batchSize = 5;
                             var batchDelay = 1000; // 1 second delay between batches
                             var results = [];
                             var successful = 0;
                             var failed = 0;
+                            var totalImages = imagesToDownload.length;
+                            var totalBatches = Math.ceil(totalImages / batchSize);
+                            
+                            // Function to update both progress bars and counts
+                            function updateProgress(current, total) {
+                                var percent = Math.min(95, (current / total) * 95);
+                                progressBarRef.style.width = percent + '%';
+                                if (minimizedProgressBarRef) {
+                                    minimizedProgressBarRef.style.width = percent + '%';
+                                }
+                                if (minimizedCountTextRef) {
+                                    minimizedCountTextRef.textContent = current + '/' + total;
+                                }
+                            }
 
                             // Helper to download single image
                             function downloadSingle(img, index, cb) {
                                 var url = img.url;
                                 var filename = img.message.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '_' + (new Date(img.timestamp)).toISOString().split('T')[0] + '.jpg';
+                                
+                                // Check if cancelled before starting download
+                                if (cancelStateRef && cancelStateRef.cancelled) {
+                                    console.log('Download cancelled before starting: ' + filename);
+                                    return; // Don't call callback, just return
+                                }
                                 var globalIndex = index + 1;
 
                                 console.log('Starting download ' + globalIndex + '/' + imagesToDownload.length + ': ' + filename);
 
-                                        // Check if this is a CORS-protected URL (character photos)
+                                // Check if this is a CORS-protected URL (character photos)
                                 var isCorsProtected = url.indexOf('characterphotos.yodayo.com') !== -1;
 
-                                        if (isCorsProtected) {
-                                            // For CORS-protected images, open in new tab for manual download
+                                if (isCorsProtected) {
+                                    // For CORS-protected images, open in new tab for manual download
                                     console.log('Opening CORS-protected image in new tab: ' + filename);
 
                                     setTimeout(function() {
+                                        // Check if cancelled before opening tab
+                                        if (cancelStateRef && cancelStateRef.cancelled) {
+                                            console.log('Download cancelled before opening tab: ' + filename);
+                                            return;
+                                        }
+                                        
                                         var newTab = window.open(url, '_blank');
-                                            if (newTab) {
+                                        if (newTab) {
                                             console.log('Opened ' + filename + ' in new tab for manual download');
                                             cb({ success: true, filename: filename, method: 'new_tab', note: 'Please right-click and save the image' });
-                                            } else {
+                                        } else {
                                             console.log('Failed to open new tab for ' + filename);
                                             cb({ success: false, filename: filename, error: 'Popup blocked' });
-                                            }
+                                        }
                                     }, index * 200);
-                                        } else {
-                                            // For regular images, use fetch method
+                                } else {
+                                    // For regular images, use fetch method
                                     console.log('Attempting fetch for: ' + filename);
 
                                     fetch(url)
                                         .then(function(response) {
+                                            // Check if cancelled before processing response
+                                            if (cancelStateRef && cancelStateRef.cancelled) {
+                                                console.log('Download cancelled during fetch: ' + filename);
+                                                return null; // Return null to indicate cancellation
+                                            }
+                                            
                                             if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
                                             return response.blob();
                                         })
                                         .then(function(blob) {
+                                            // Check if cancelled before creating download link
+                                            if (cancelStateRef && cancelStateRef.cancelled) {
+                                                console.log('Download cancelled before creating link: ' + filename);
+                                                return;
+                                            }
+                                            
+                                            if (!blob) return; // Cancelled during fetch
+                                            
                                             var blobUrl = URL.createObjectURL(blob);
                                             var link = document.createElement('a');
                                             link.href = blobUrl;
@@ -4301,6 +4830,11 @@
                                             cb({ success: true, filename: filename, method: 'fetch_download' });
                                         })
                                         .catch(function(error) {
+                                            // Don't log error if cancelled
+                                            if (cancelStateRef && cancelStateRef.cancelled) {
+                                                console.log('Download cancelled (error ignored): ' + filename);
+                                                return;
+                                            }
                                             console.error('Failed to download ' + filename + ':', error);
                                             cb({ success: false, filename: filename, error: error });
                                         });
@@ -4310,54 +4844,186 @@
                             // Batch/sequential download
                             var batchStart = 0;
                             function doBatch() {
+                                // Check if cancelled
+                                if (cancelStateRef && cancelStateRef.cancelled) {
+                                    console.log('Download cancelled - stopping batch processing');
+                                    return;
+                                }
+                                
                                 if (batchStart >= imagesToDownload.length) {
                                     console.log('Download complete: ' + successful + ' successful, ' + failed + ' failed');
-                                    // Reset button state
-                                    btn.textContent = originalText;
-                                    btn.disabled = false;
+                                    
+                                    // Complete progress bar
+                                    updateProgress(successful, totalImages);
+                                    progressBarRef.style.width = '100%';
+                                    if (minimizedProgressBarRef) {
+                                        minimizedProgressBarRef.style.width = '100%';
+                                    }
+                                    progressTextRef.textContent = 'Download complete! ' + successful + ' successful, ' + failed + ' failed';
+                                    
+                                    // Change cancel button to "Close"
+                                    if (cancelBtnRef) {
+                                        cancelBtnRef.textContent = 'Close';
+                                        console.log('Changed cancel button to Close');
+                                    } else {
+                                        // Fallback: try to find cancel button in DOM (inside fullContent)
+                                        var fullContent = progressContainerRef.querySelector('.holly-progress-full-content');
+                                        if (fullContent) {
+                                            var buttons = fullContent.querySelectorAll('button');
+                                            for (var b = 0; b < buttons.length; b++) {
+                                                if (buttons[b].textContent.trim() === 'Cancel') {
+                                                    buttons[b].textContent = 'Close';
+                                                    console.log('Found and updated cancel button via DOM query');
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Auto-close if enabled (defaults to true if preference not set)
+                                    if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
+                                        setTimeout(function() {
+                                            if (progressContainerRef && progressContainerRef.parentNode) {
+                                                progressContainerRef.style.opacity = '0';
+                                                progressContainerRef.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                                setTimeout(function() {
+                                                    if (progressContainerRef && progressContainerRef.parentNode) {
+                                                        progressContainerRef.parentNode.removeChild(progressContainerRef);
+                                                    }
+                                                }, 300);
+                                            }
+                                            // Reset button state
+                                            btnRef.title = originalTitleRef;
+                                            btnRef.disabled = false;
+                                            if (svgRef) svgRef.style.opacity = '1';
+                                        }, 2000);
+                                    } else {
+                                        // Reset button state (if not auto-closing)
+                                        btnRef.title = originalTitleRef;
+                                        btnRef.disabled = false;
+                                        if (svgRef) svgRef.style.opacity = '1';
+                                    }
                                     return;
                                 }
 
                                 var batch = imagesToDownload.slice(batchStart, batchStart + batchSize);
                                 var batchNumber = Math.floor(batchStart / batchSize) + 1;
-                                var totalBatches = Math.ceil(imagesToDownload.length / batchSize);
 
                                 console.log('Processing batch ' + batchNumber + '/' + totalBatches + ' (' + batch.length + ' images)');
 
-                                btn.textContent = 'Downloading batch ' + batchNumber + '/' + totalBatches + '...';
+                                // Update progress indicator at start of batch
+                                updateProgress(successful, totalImages);
+                                progressTextRef.textContent = 'Downloading batch ' + batchNumber + '/' + totalBatches + '... (' + successful + ' downloaded)';
+                                
+                                btnRef.title = 'Downloading batch ' + batchNumber + '/' + totalBatches + '...';
 
                                 // Download all in batch, callback after all finish
                                 var finished = 0;
                                 var batchResults = [];
                                 function finishOne(result) {
+                                    // Check if cancelled before processing result
+                                    if (cancelStateRef && cancelStateRef.cancelled) {
+                                        console.log('Download cancelled - ignoring batch result');
+                                        return;
+                                    }
+                                    
                                     batchResults.push(result);
                                     if (result.success) successful++;
                                     else failed++;
                                     finished++;
                                     if (finished === batch.length) {
+                                        // Check if cancelled after batch completes
+                                        if (cancelStateRef && cancelStateRef.cancelled) {
+                                            console.log('Download cancelled after batch complete');
+                                            return;
+                                        }
+                                        
                                         results = results.concat(batchResults);
                                         console.log('Batch ' + batchNumber + ' complete: ' + successful + ' successful, ' + failed + ' failed so far');
+                                        
+                                        // Update progress after batch completes
+                                        updateProgress(successful, totalImages);
+                                        progressTextRef.textContent = 'Completed batch ' + batchNumber + '/' + totalBatches + ' (' + successful + ' downloaded)';
+                                        
                                         batchStart += batchSize;
                                         if (batchStart < imagesToDownload.length) {
+                                            // Check if cancelled before scheduling next batch
+                                            if (cancelStateRef && cancelStateRef.cancelled) {
+                                                console.log('Download cancelled before next batch');
+                                                return;
+                                            }
                                             console.log('Waiting ' + batchDelay + 'ms before next batch...');
-                                            setTimeout(doBatch, batchDelay);
+                                            setTimeout(function() {
+                                                if (!cancelStateRef || !cancelStateRef.cancelled) {
+                                                    doBatch();
+                                                } else {
+                                                    console.log('Download cancelled during batch delay');
+                                                }
+                                            }, batchDelay);
                                         } else {
+                                            // This case is handled at the start of doBatch, but keeping for safety
                                             console.log('Download complete: ' + successful + ' successful, ' + failed + ' failed');
-                                            btn.textContent = originalText;
-                                            btn.disabled = false;
+                                            // Change cancel button to "Close"
+                                            if (cancelBtnRef) {
+                                                cancelBtnRef.textContent = 'Close';
+                                            } else {
+                                                // Fallback: try to find cancel button in DOM (inside fullContent)
+                                                var fullContent = progressContainerRef.querySelector('.holly-progress-full-content');
+                                                if (fullContent) {
+                                                    var buttons = fullContent.querySelectorAll('button');
+                                                    for (var b = 0; b < buttons.length; b++) {
+                                                        if (buttons[b].textContent.trim() === 'Cancel') {
+                                                            buttons[b].textContent = 'Close';
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            // Auto-close if enabled (defaults to true if preference not set)
+                                            if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
+                                                setTimeout(function() {
+                                                    if (progressContainerRef && progressContainerRef.parentNode) {
+                                                        progressContainerRef.style.opacity = '0';
+                                                        progressContainerRef.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                                        setTimeout(function() {
+                                                            if (progressContainerRef && progressContainerRef.parentNode) {
+                                                                progressContainerRef.parentNode.removeChild(progressContainerRef);
+                                                            }
+                                                        }, 300);
+                                                    }
+                                                    // Reset button state
+                                                    btnRef.title = originalTitleRef;
+                                                    btnRef.disabled = false;
+                                                    if (svgRef) svgRef.style.opacity = '1';
+                                                }, 2000);
+                                            } else {
+                                                // Reset button state (if not auto-closing)
+                                                btnRef.title = originalTitleRef;
+                                                btnRef.disabled = false;
+                                                if (svgRef) svgRef.style.opacity = '1';
+                                            }
                                         }
                                     }
                                 }
 
                                 for (var k = 0; k < batch.length; k++) {
+                                    // Check if cancelled before starting each download
+                                    if (cancelStateRef && cancelStateRef.cancelled) {
+                                        console.log('Download cancelled - stopping batch downloads');
+                                        return;
+                                    }
+                                    
                                     (function(img, idx) {
                                         downloadSingle(img, batchStart + idx, finishOne);
                                     })(batch[k], k);
                                 }
                             }
 
+                            // Initialize progress display
+                            updateProgress(0, totalImages);
+                            
                             doBatch();
-                        })();
+                        })(btn, svg, originalTitle, progressContainer, progressBar, progressText, cancelState, minimizedProgressBar, minimizedCountText, cancelBtn);
                     });
                 }
             }, 100);
@@ -4528,15 +5194,42 @@
         }
 
         // Update progress if this is an export (not image viewing)
-        if (chatIndex === null && btn && !btn.progressIndicator) {
+        // Check if we need to create a new progress indicator (none exists, or container was removed)
+        var needsNewProgressIndicator = chatIndex === null && btn && (!btn.progressIndicator || !btn.progressIndicator.container || !btn.progressIndicator.container.parentNode);
+        if (needsNewProgressIndicator) {
+            // Clear any stale reference
+            if (btn.progressIndicator && !btn.progressIndicator.container.parentNode) {
+                btn.progressIndicator = null;
+            }
             // Create a progress indicator element
             const progressContainer = document.createElement('div')
             progressContainer.className = 'holly-export-progress'
-            progressContainer.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000010; background: ${colorScheme.cardBackground}; border: 1px solid ${colorScheme.border}; border-radius: 12px; padding: 20px; min-width: 300px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.5);`
+            progressContainer.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000010; background: ${colorScheme.cardBackground}; border: 1px solid ${colorScheme.border}; border-radius: 12px; padding: 20px; min-width: 300px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: move; user-select: none;`
 
+            // Create header with title and minimize button
+            const headerRow = document.createElement('div')
+            headerRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: move;'
+            
             const progressTitle = document.createElement('div')
             progressTitle.textContent = 'Exporting Chat...'
-            progressTitle.style.cssText = `color: ${colorScheme.textPrimary}; font-weight: 600; font-size: 16px; margin-bottom: 12px;`
+            progressTitle.style.cssText = `color: ${colorScheme.textPrimary}; font-weight: 600; font-size: 16px; flex: 1;`
+
+            // Create minimize button
+            const minimizeBtn = document.createElement('button')
+            minimizeBtn.innerHTML = '−'
+            minimizeBtn.style.cssText = `background: transparent; color: ${colorScheme.textPrimary}; border: none; border-radius: 4px; padding: 4px 8px; font-size: 18px; cursor: pointer; transition: all 0.2s; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; line-height: 1;`
+            minimizeBtn.title = 'Minimize'
+            minimizeBtn.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = colorScheme.hoverBackground
+                this.style.color = colorScheme.hoverText
+            })
+            minimizeBtn.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = 'transparent'
+                this.style.color = colorScheme.textPrimary
+            })
+
+            headerRow.appendChild(progressTitle)
+            headerRow.appendChild(minimizeBtn)
 
             const progressBarContainer = document.createElement('div')
             progressBarContainer.style.cssText = `width: 100%; height: 8px; background: ${colorScheme.border}; border-radius: 4px; overflow: hidden; margin-bottom: 8px;`
@@ -4546,15 +5239,245 @@
 
             const progressText = document.createElement('div')
             progressText.className = 'holly-progress-text'
-            progressText.style.cssText = `color: ${colorScheme.textSecondary}; font-size: 12px; text-align: center;`
+            progressText.style.cssText = `color: ${colorScheme.textSecondary}; font-size: 12px; text-align: center; margin-bottom: 12px;`
             progressText.textContent = 'Fetching messages...'
 
+            // Create cancel button
+            const cancelBtn = document.createElement('button')
+            cancelBtn.textContent = 'Cancel'
+            cancelBtn.style.cssText = `background: ${colorScheme.border}; color: ${colorScheme.textPrimary}; border: 1px solid ${colorScheme.border}; border-radius: 6px; padding: 8px 16px; font-size: 14px; cursor: pointer; transition: all 0.2s; width: 100%; margin-top: 8px;`
+            cancelBtn.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = colorScheme.hoverBackground
+                this.style.borderColor = colorScheme.hoverText
+            })
+            cancelBtn.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = colorScheme.border
+                this.style.borderColor = colorScheme.border
+            })
+
+            // Create full content container (shown when not minimized)
+            const fullContent = document.createElement('div')
+            fullContent.className = 'holly-progress-full-content'
+            fullContent.style.cssText = 'display: block;'
+            fullContent.appendChild(progressBarContainer)
+            fullContent.appendChild(progressText)
+            fullContent.appendChild(cancelBtn)
+
+            // Create minimized content container (shown when minimized)
+            const minimizedContent = document.createElement('div')
+            minimizedContent.className = 'holly-progress-minimized-content'
+            minimizedContent.style.cssText = 'display: none; align-items: center; gap: 12px; cursor: move;'
+            
+            // Minimized progress bar
+            const minimizedProgressBarContainer = document.createElement('div')
+            minimizedProgressBarContainer.style.cssText = `flex: 1; height: 6px; background: ${colorScheme.border}; border-radius: 3px; overflow: hidden;`
+            const minimizedProgressBar = document.createElement('div')
+            minimizedProgressBar.style.cssText = `height: 100%; background: ${colorScheme.gradient}; width: 0%; transition: width 0.3s ease; border-radius: 3px;`
+            minimizedProgressBarContainer.appendChild(minimizedProgressBar)
+            
+            // Minimized status text (shows "Exporting..." or "Complete")
+            const minimizedStatusText = document.createElement('div')
+            minimizedStatusText.className = 'holly-progress-minimized-status'
+            minimizedStatusText.style.cssText = `color: ${colorScheme.textPrimary}; font-size: 12px; font-weight: 500; white-space: nowrap; min-width: 100px; text-align: center;`
+            minimizedStatusText.textContent = 'Exporting...'
+            
+            // Minimized minimize button (to expand)
+            const minimizedMinimizeBtn = document.createElement('button')
+            minimizedMinimizeBtn.innerHTML = '+'
+            minimizedMinimizeBtn.style.cssText = `background: transparent; color: ${colorScheme.textPrimary}; border: none; border-radius: 4px; padding: 4px 8px; font-size: 16px; cursor: pointer; transition: all 0.2s; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0;`
+            minimizedMinimizeBtn.title = 'Restore'
+            minimizedMinimizeBtn.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = colorScheme.hoverBackground
+                this.style.color = colorScheme.hoverText
+            })
+            minimizedMinimizeBtn.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = 'transparent'
+                this.style.color = colorScheme.textPrimary
+            })
+            
+            // Minimized close button (✕)
+            var minimizedCloseBtn = document.createElement('button')
+            minimizedCloseBtn.innerHTML = '✕'
+            minimizedCloseBtn.style.cssText = 'background: transparent; color: ' + colorScheme.textPrimary + '; border: none; border-radius: 4px; padding: 4px 8px; font-size: 16px; cursor: pointer; transition: all 0.2s; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0;'
+            minimizedCloseBtn.title = 'Close'
+            minimizedCloseBtn.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = colorScheme.hoverBackground
+                this.style.color = colorScheme.hoverText
+            })
+            minimizedCloseBtn.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = 'transparent'
+                this.style.color = colorScheme.textPrimary
+            })
+            minimizedCloseBtn.addEventListener('click', function(e) {
+                e.stopPropagation()
+                // Use same logic as cancelBtn - check if it says "Close" or "Cancel"
+                if (cancelBtn.textContent === 'Close') {
+                    // Just close the modal
+                    progressContainer.style.opacity = '0'
+                    progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                    setTimeout(function() {
+                        if (progressContainer && progressContainer.parentNode) {
+                            progressContainer.parentNode.removeChild(progressContainer)
+                        }
+                        btn.progressIndicator = null
+                    }, 300)
+                    btn.busy = false
+                    btn.innerText = 'Download'
+                } else {
+                    // Cancel export in progress
+                    if (btn && btn.progressIndicator) {
+                        btn.progressIndicator.cancelled = true
+                        progressContainer.style.opacity = '0'
+                        progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                        setTimeout(function() {
+                            if (btn.progressIndicator && btn.progressIndicator.container.parentNode) {
+                                btn.progressIndicator.container.parentNode.removeChild(btn.progressIndicator.container)
+                            }
+                            btn.progressIndicator = null
+                        }, 300)
+                        btn.busy = false
+                        btn.innerText = 'Download'
+                    }
+                }
+            })
+
+            minimizedContent.appendChild(minimizedProgressBarContainer)
+            minimizedContent.appendChild(minimizedStatusText)
+            minimizedContent.appendChild(minimizedMinimizeBtn)
+            minimizedContent.appendChild(minimizedCloseBtn)
+
             progressBarContainer.appendChild(progressBar)
-            progressContainer.appendChild(progressTitle)
-            progressContainer.appendChild(progressBarContainer)
-            progressContainer.appendChild(progressText)
+            progressContainer.appendChild(headerRow)
+            progressContainer.appendChild(fullContent)
+            progressContainer.appendChild(minimizedContent)
             progressContainer.style.opacity = '0'
             document.body.appendChild(progressContainer)
+
+            // Drag functionality
+            var isDragging = false
+            var dragOffsetX = 0
+            var dragOffsetY = 0
+            var currentX = 0
+            var currentY = 0
+            
+            function startDrag(e) {
+                // Don't start drag if clicking on buttons
+                if (e.target.tagName === 'BUTTON' || (e.target.closest && e.target.closest('button'))) {
+                    return
+                }
+                isDragging = true
+                var rect = progressContainer.getBoundingClientRect()
+                dragOffsetX = e.clientX - rect.left
+                dragOffsetY = e.clientY - rect.top
+                progressContainer.style.cursor = 'grabbing'
+                e.preventDefault()
+            }
+            
+            function drag(e) {
+                if (!isDragging) return
+                e.preventDefault()
+                currentX = e.clientX - dragOffsetX
+                currentY = e.clientY - dragOffsetY
+                
+                // Constrain to viewport
+                var maxX = window.innerWidth - progressContainer.offsetWidth
+                var maxY = window.innerHeight - progressContainer.offsetHeight
+                currentX = Math.max(0, Math.min(currentX, maxX))
+                currentY = Math.max(0, Math.min(currentY, maxY))
+                
+                progressContainer.style.left = currentX + 'px'
+                progressContainer.style.top = currentY + 'px'
+                progressContainer.style.transform = 'none'
+            }
+            
+            function stopDrag() {
+                if (isDragging) {
+                    isDragging = false
+                    progressContainer.style.cursor = 'move'
+                }
+            }
+            
+            headerRow.addEventListener('mousedown', startDrag)
+            // Also allow dragging from minimized content area (but not buttons)
+            minimizedContent.addEventListener('mousedown', function(e) {
+                if (e.target.tagName !== 'BUTTON' && (!e.target.closest || !e.target.closest('button'))) {
+                    startDrag(e)
+                }
+            })
+            document.addEventListener('mousemove', drag)
+            document.addEventListener('mouseup', stopDrag)
+
+            // Minimize functionality
+            var isMinimized = false
+            function toggleMinimize() {
+                isMinimized = !isMinimized
+                if (isMinimized) {
+                    // Switch to minimized view
+                    fullContent.style.display = 'none'
+                    minimizedContent.style.display = 'flex'
+                    headerRow.style.display = 'none' // Hide header in minimized mode
+                    progressContainer.style.minWidth = '250px'
+                    progressContainer.style.width = 'auto'
+                    progressContainer.style.padding = '6px 10px'
+                    minimizeBtn.innerHTML = '+'
+                    minimizeBtn.title = 'Restore'
+                } else {
+                    // Switch to full view
+                    fullContent.style.display = 'block'
+                    minimizedContent.style.display = 'none'
+                    headerRow.style.display = 'flex' // Show header in full mode
+                    progressContainer.style.minWidth = '300px'
+                    progressContainer.style.width = 'auto'
+                    progressContainer.style.padding = '20px'
+                    minimizeBtn.innerHTML = '−'
+                    minimizeBtn.title = 'Minimize'
+                }
+            }
+            
+            minimizeBtn.addEventListener('click', function(e) {
+                e.stopPropagation()
+                toggleMinimize()
+            })
+            
+            minimizedMinimizeBtn.addEventListener('click', function(e) {
+                e.stopPropagation()
+                toggleMinimize()
+            })
+
+            cancelBtn.addEventListener('click', function() {
+                // Check if button says "Close" (export complete) or "Cancel" (still exporting)
+                if (this.textContent === 'Close') {
+                    // Just close the modal, don't cancel export
+                    progressContainer.style.opacity = '0'
+                    progressContainer.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                    setTimeout(function() {
+                        if (progressContainer && progressContainer.parentNode) {
+                            progressContainer.parentNode.removeChild(progressContainer)
+                        }
+                        btn.progressIndicator = null
+                    }, 300)
+                    // Reset button state
+                    btn.busy = false
+                    btn.innerText = 'Download'
+                } else {
+                    // Cancel export in progress
+                    if (btn && btn.progressIndicator) {
+                        btn.progressIndicator.cancelled = true
+                        // Close progress indicator
+                        btn.progressIndicator.container.style.opacity = '0'
+                        btn.progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)'
+                        setTimeout(function() {
+                            if (btn.progressIndicator && btn.progressIndicator.container.parentNode) {
+                                btn.progressIndicator.container.parentNode.removeChild(btn.progressIndicator.container)
+                            }
+                            btn.progressIndicator = null
+                        }, 300)
+                        // Reset button state
+                        btn.busy = false
+                        btn.innerText = 'Download'
+                    }
+                }
+            })
 
             // Fade in animation
         requestAnimationFrame(() => {
@@ -4568,21 +5491,34 @@
                 container: progressContainer,
                 bar: progressBar,
                 text: progressText,
-                startOffset: offset
+                startOffset: offset,
+                cancelled: false,
+                cancelBtn: cancelBtn,
+                minimizedProgressBar: minimizedProgressBar,
+                minimizedStatusText: minimizedStatusText
             }
         }
 
         // Update progress text
-        if (btn && btn.progressIndicator && chatIndex === null) {
+        if (btn && btn.progressIndicator && btn.progressIndicator.container && btn.progressIndicator.container.parentNode && chatIndex === null) {
             const chunkNumber = Math.floor(offset / QUERY_BATCH_SIZE) + 1
             btn.progressIndicator.text.textContent = `Fetching chunk ${chunkNumber}...`
             // Estimate progress (we don't know total, so show based on chunks)
             const estimatedProgress = Math.min(90, (chunkNumber * 10)) // Cap at 90% until we're done
             btn.progressIndicator.bar.style.width = `${estimatedProgress}%`
+            // Update minimized progress bar
+            if (btn.progressIndicator.minimizedProgressBar) {
+                btn.progressIndicator.minimizedProgressBar.style.width = `${estimatedProgress}%`
+            }
         }
 
         ajax('https://api.' + location.hostname + '/v1/chats/' + uuid + '/messages?limit=' + QUERY_BATCH_SIZE + '&offset=' + offset, false, function (r)
             {
+            // Check if cancelled before processing response
+            if (btn && btn.progressIndicator && btn.progressIndicator.cancelled) {
+                return
+            }
+            
             r = JSON.parse(r)
             if (!r || r.error) {
                 // Remove progress indicator on error
@@ -4596,45 +5532,61 @@
             collected = collected.concat(r.messages)
 
             if (r.messages.length == QUERY_BATCH_SIZE) {
+                // Check if cancelled before fetching next chunk
+                if (btn && btn.progressIndicator && btn.progressIndicator.cancelled) {
+                    return
+                }
+                
                 // Update progress before next chunk
-                if (btn && btn.progressIndicator && chatIndex === null) {
+                if (btn && btn.progressIndicator && btn.progressIndicator.container && btn.progressIndicator.container.parentNode && chatIndex === null) {
                     const chunkNumber = Math.floor(offset / QUERY_BATCH_SIZE) + 1
                     btn.progressIndicator.text.textContent = `Fetched ${collected.length} messages... (chunk ${chunkNumber})`
+                    // Update minimized status
+                    if (btn.progressIndicator.minimizedStatusText) {
+                        btn.progressIndicator.minimizedStatusText.textContent = `Fetching... ${collected.length} msgs`
+                    }
                 }
                 retrieveConversationChunk(uuid, offset + QUERY_BATCH_SIZE, collected, btn, chatIndex)
             } else {
+                // Check if cancelled before proceeding
+                if (btn && btn.progressIndicator && btn.progressIndicator.cancelled) {
+                    return
+                }
+                
                 // All done - cache the messages
                 chatCache.setChatMessages(uuid, collected)
 
                 // All done - complete progress bar
-                if (btn && btn.progressIndicator && chatIndex === null) {
+                if (btn && btn.progressIndicator && btn.progressIndicator.container && btn.progressIndicator.container.parentNode && chatIndex === null) {
                     btn.progressIndicator.bar.style.width = '100%'
                     btn.progressIndicator.text.textContent = `Fetched ${collected.length} messages. Preparing export...`
+                    // Update minimized progress bar
+                    if (btn.progressIndicator.minimizedProgressBar) {
+                        btn.progressIndicator.minimizedProgressBar.style.width = '100%'
+                    }
+                    // Update minimized status
+                    if (btn.progressIndicator.minimizedStatusText) {
+                        btn.progressIndicator.minimizedStatusText.textContent = 'Preparing export...'
+                    }
                 }
 
-                // Small delay to show 100% before closing
+                // Small delay to show 100% before processing
                 setTimeout(() => {
-                    // For HTML format (async), keep progress indicator, otherwise remove it
-                    const format = document.getElementById('holly_download_format')?.value || 'txt'
-                    const isHTMLFormat = format === 'html'
+                    // Update progress for HTML format (or keep indicator for all formats)
+                    if (btn && btn.progressIndicator && btn.progressIndicator.container && btn.progressIndicator.container.parentNode && chatIndex === null) {
+                        const format = document.getElementById('holly_download_format')?.value || 'txt'
+                        const isHTMLFormat = format === 'html'
 
-                    if (!isHTMLFormat) {
-                        // Remove progress indicator for non-HTML formats (they're fast and synchronous)
-                        if (btn && btn.progressIndicator) {
-                            btn.progressIndicator.container.style.opacity = '0'
-                            btn.progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)'
-                            setTimeout(() => {
-                                if (btn.progressIndicator && btn.progressIndicator.container.parentNode) {
-                                    btn.progressIndicator.container.remove()
-                                }
-                                btn.progressIndicator = null
-                            }, 300)
-                        }
-                    } else {
-                        // Update progress for HTML format
-                        if (btn && btn.progressIndicator) {
+                        if (isHTMLFormat) {
+                            // Update progress for HTML format
                             btn.progressIndicator.text.textContent = `Processing ${collected.length} messages for HTML export...`
                             btn.progressIndicator.bar.style.width = '95%'
+                            if (btn.progressIndicator.minimizedProgressBar) {
+                                btn.progressIndicator.minimizedProgressBar.style.width = '95%'
+                            }
+                            if (btn.progressIndicator.minimizedStatusText) {
+                                btn.progressIndicator.minimizedStatusText.textContent = 'Processing HTML...'
+                            }
                         }
                     }
 
@@ -4814,6 +5766,45 @@
                     }
                     var blob = new Blob([lines.join('\n')], { type: 'text/plain' });
                     Utils.download(URL.createObjectURL(blob), baseName + '.jsonl');
+                    // Update progress indicator for completion
+                    if (progressIndicator) {
+                        progressIndicator.bar.style.width = '100%';
+                        progressIndicator.text.textContent = 'Export complete!';
+                        if (progressIndicator.minimizedProgressBar) {
+                            progressIndicator.minimizedProgressBar.style.width = '100%';
+                        }
+                        if (progressIndicator.minimizedStatusText) {
+                            progressIndicator.minimizedStatusText.textContent = 'Complete';
+                        }
+                        if (progressIndicator.cancelBtn) {
+                            progressIndicator.cancelBtn.textContent = 'Close';
+                        } else {
+                            var fullContent = progressIndicator.container.querySelector('.holly-progress-full-content');
+                            if (fullContent) {
+                                var buttons = fullContent.querySelectorAll('button');
+                                for (var b = 0; b < buttons.length; b++) {
+                                    if (buttons[b].textContent.trim() === 'Cancel') {
+                                        buttons[b].textContent = 'Close';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // Auto-close if enabled (defaults to true if preference not set)
+                        if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
+                            setTimeout(function() {
+                                if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                    progressIndicator.container.style.opacity = '0';
+                                    progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                    setTimeout(function() {
+                                        if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                            progressIndicator.container.parentNode.removeChild(progressIndicator.container);
+                                        }
+                                    }, 300);
+                                }
+                            }, 2000);
+                        }
+                    }
             } else if (format === 'jsonl-openai') {
                     var lines = [];
                 if (greeting) {
@@ -4824,7 +5815,46 @@
                     }
                     var blob = new Blob([lines.join('\n')], { type: 'application/x-ndjson' });
                     Utils.download(URL.createObjectURL(blob), baseName + '.jsonl');
-            } else if (format === 'json') {
+                    // Update progress indicator for completion
+                    if (progressIndicator) {
+                        progressIndicator.bar.style.width = '100%';
+                        progressIndicator.text.textContent = 'Export complete!';
+                        if (progressIndicator.minimizedProgressBar) {
+                            progressIndicator.minimizedProgressBar.style.width = '100%';
+                        }
+                        if (progressIndicator.minimizedStatusText) {
+                            progressIndicator.minimizedStatusText.textContent = 'Complete';
+                        }
+                        if (progressIndicator.cancelBtn) {
+                            progressIndicator.cancelBtn.textContent = 'Close';
+                        } else {
+                            var fullContent = progressIndicator.container.querySelector('.holly-progress-full-content');
+                            if (fullContent) {
+                                var buttons = fullContent.querySelectorAll('button');
+                                for (var b = 0; b < buttons.length; b++) {
+                                    if (buttons[b].textContent.trim() === 'Cancel') {
+                                        buttons[b].textContent = 'Close';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // Auto-close if enabled (defaults to true if preference not set)
+                        if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
+                            setTimeout(function() {
+                                if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                    progressIndicator.container.style.opacity = '0';
+                                    progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                    setTimeout(function() {
+                                        if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                            progressIndicator.container.parentNode.removeChild(progressIndicator.container);
+                                        }
+                                    }, 300);
+                                }
+                            }, 2000);
+                        }
+                    }
+                } else if (format === 'json') {
                     var payload = {
                     source: location.href,
                     exported_at: new Date().toISOString(),
@@ -4834,6 +5864,45 @@
                 };
                     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
                     Utils.download(URL.createObjectURL(blob), baseName + '.json');
+                    // Update progress indicator for completion
+                    if (progressIndicator) {
+                        progressIndicator.bar.style.width = '100%';
+                        progressIndicator.text.textContent = 'Export complete!';
+                        if (progressIndicator.minimizedProgressBar) {
+                            progressIndicator.minimizedProgressBar.style.width = '100%';
+                        }
+                        if (progressIndicator.minimizedStatusText) {
+                            progressIndicator.minimizedStatusText.textContent = 'Complete';
+                        }
+                        if (progressIndicator.cancelBtn) {
+                            progressIndicator.cancelBtn.textContent = 'Close';
+                        } else {
+                            var fullContent = progressIndicator.container.querySelector('.holly-progress-full-content');
+                            if (fullContent) {
+                                var buttons = fullContent.querySelectorAll('button');
+                                for (var b = 0; b < buttons.length; b++) {
+                                    if (buttons[b].textContent.trim() === 'Cancel') {
+                                        buttons[b].textContent = 'Close';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // Auto-close if enabled (defaults to true if preference not set)
+                        if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
+                            setTimeout(function() {
+                                if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                    progressIndicator.container.style.opacity = '0';
+                                    progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                    setTimeout(function() {
+                                        if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                            progressIndicator.container.parentNode.removeChild(progressIndicator.container);
+                                        }
+                                    }, 300);
+                                }
+                            }, 2000);
+                        }
+                    }
                 } else if (format === 'html') {
                     // HTML export with embedded images
                     var htmlContent = '<!DOCTYPE html>\n' +
@@ -5073,23 +6142,52 @@
                         if (progressIndicator) {
                             progressIndicator.bar.style.width = '100%';
                             progressIndicator.text.textContent = 'Export complete!';
+                            // Update minimized progress bar
+                            if (progressIndicator.minimizedProgressBar) {
+                                progressIndicator.minimizedProgressBar.style.width = '100%';
+                            }
+                            // Update minimized status
+                            if (progressIndicator.minimizedStatusText) {
+                                progressIndicator.minimizedStatusText.textContent = 'Complete';
+                            }
+                            // Change cancel button to "Close"
+                            if (progressIndicator.cancelBtn) {
+                                progressIndicator.cancelBtn.textContent = 'Close';
+                            } else {
+                                // Fallback: try to find cancel button in DOM
+                                var fullContent = progressIndicator.container.querySelector('.holly-progress-full-content');
+                                if (fullContent) {
+                                    var buttons = fullContent.querySelectorAll('button');
+                                    for (var b = 0; b < buttons.length; b++) {
+                                        if (buttons[b].textContent.trim() === 'Cancel') {
+                                            buttons[b].textContent = 'Close';
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Auto-close if enabled (defaults to true if preference not set)
+                            if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
+                                setTimeout(function() {
+                                    if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                        progressIndicator.container.style.opacity = '0';
+                                        progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                        setTimeout(function() {
+                                            if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                                progressIndicator.container.parentNode.removeChild(progressIndicator.container);
+                                            }
+                                            // Clear the progress indicator reference (need to find the button that owns it)
+                                            // The progressIndicator is stored on btn.progressIndicator, but we don't have btn reference here
+                                            // We'll clear it when the container is removed - the next export will create a new one
+                                        }, 300);
+                                    }
+                                }, 2000); // 2 second delay after completion
+                            }
                         }
 
                         var blob = new Blob([htmlContent], { type: 'text/html' });
                         Utils.download(URL.createObjectURL(blob), baseName + '.html');
-
-                        // Close progress indicator after a brief delay
-                        if (progressIndicator) {
-                            setTimeout(function() {
-                                progressIndicator.container.style.opacity = '0';
-                                progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)';
-                                setTimeout(function() {
-                                    if (progressIndicator.container.parentNode) {
-                                        progressIndicator.container.remove();
-                                    }
-                                }, 300);
-                            }, 500);
-                        }
                     };
 
                     processMessagesForHTML();
@@ -5101,6 +6199,45 @@
                     }
                     var blob = new Blob([pieces.join('\n\n\n')], { type: 'text/plain' });
                     Utils.download(URL.createObjectURL(blob), baseName + '.txt');
+                    // Update progress indicator for completion
+                    if (progressIndicator) {
+                        progressIndicator.bar.style.width = '100%';
+                        progressIndicator.text.textContent = 'Export complete!';
+                        if (progressIndicator.minimizedProgressBar) {
+                            progressIndicator.minimizedProgressBar.style.width = '100%';
+                        }
+                        if (progressIndicator.minimizedStatusText) {
+                            progressIndicator.minimizedStatusText.textContent = 'Complete';
+                        }
+                        if (progressIndicator.cancelBtn) {
+                            progressIndicator.cancelBtn.textContent = 'Close';
+                        } else {
+                            var fullContent = progressIndicator.container.querySelector('.holly-progress-full-content');
+                            if (fullContent) {
+                                var buttons = fullContent.querySelectorAll('button');
+                                for (var b = 0; b < buttons.length; b++) {
+                                    if (buttons[b].textContent.trim() === 'Cancel') {
+                                        buttons[b].textContent = 'Close';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // Auto-close if enabled (defaults to true if preference not set)
+                        if (localStorage.getItem('hollyAutoCloseProgress') !== 'false') {
+                            setTimeout(function() {
+                                if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                    progressIndicator.container.style.opacity = '0';
+                                    progressIndicator.container.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                                    setTimeout(function() {
+                                        if (progressIndicator && progressIndicator.container && progressIndicator.container.parentNode) {
+                                            progressIndicator.container.parentNode.removeChild(progressIndicator.container);
+                                        }
+                                    }, 300);
+                                }
+                            }, 2000);
+                        }
+                    }
             }
         };
 

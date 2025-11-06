@@ -3049,10 +3049,6 @@
                     imagePopup.parentNode.removeChild(imagePopup)
                     imagePopup = null
                 }
-                // Unlock body scroll when popup closes (only if viewer isn't open)
-                if (!imageViewerModal || !imageViewerModal.parentNode) {
-                    unlockBodyScroll()
-                }
             }, 300)
             }
 
@@ -3068,16 +3064,7 @@
                 if (backdrop && backdrop.parentNode) {
                     backdrop.remove()
                 }
-                // Unlock body scroll after backdrop is removed (only if viewer isn't open)
-                if (!imageViewerModal || !imageViewerModal.parentNode) {
-                    unlockBodyScroll()
-                }
             }, 300)
-        } else {
-            // If no backdrop found, unlock scroll immediately (only if viewer isn't open)
-            if (!imageViewerModal || !imageViewerModal.parentNode) {
-                unlockBodyScroll()
-            }
         }
         },
 
@@ -4671,11 +4658,6 @@
                     backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0)'
                     backdrop.style.backdropFilter = 'blur(0px)'
                     backdrop.style.webkitBackdropFilter = 'blur(0px)'
-                }
-
-                // Unlock body scroll when viewer closes (only if popup isn't open)
-                if (!imagePopup || !imagePopup.parentNode) {
-                    unlockBodyScroll()
                 }
 
                 // Remove all buttons and controls

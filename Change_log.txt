@@ -1,5 +1,95 @@
 # Change Log - Tavern Chat Downloader
 
+## Version 2.3.0 - Performance Update & Progressive Image Loading
+
+### New Features
+- **Progressive Image Loading**: Efficient image extraction and display for large chat collections
+  - Images load progressively in chunks as messages are processed
+  - Loading card with "Checking for Images" indicator shows during extraction
+  - Character and background photos load first, followed by chat-generated images
+  - Smooth, non-blocking image processing that keeps the UI responsive
+  - Works seamlessly with both cached and fresh message data
+- **Infinite Scroll Option**: User-configurable infinite scrolling for image popup
+  - Toggle in settings modal: "Infinite Scroll for Images (Pagination protects server)"
+  - Defaults to pagination mode (OFF) to prevent server overload
+  - When enabled, images load progressively as user scrolls
+  - Intersection Observer detects when loading card enters viewport
+  - Loading card appears at end of grid to indicate more images are loading
+- **Smart Loading Card Behavior**: Intelligent loading indicator management
+  - Loading card appears immediately when popup opens (before images start processing)
+  - Automatically hidden when images are already cached (no unnecessary loading state)
+  - Removed immediately if no images are found (no delay needed)
+  - Minimum 2000ms display time when images are found and loaded
+  - 60px spinner with "Checking for Images" text for clear user feedback
+
+### UI/UX Enhancements
+- **Loading Card Design**: Professional loading indicator with clear messaging
+  - 60px spinning animation circle (1.5x larger than before)
+  - "Checking for Images" text below spinner
+  - Vertical flex layout with 12px gap between spinner and text
+  - Responsive sizing with clamp() for all screen sizes
+  - Consistent styling across all loading states
+- **Progressive Chat List Loading**: Enhanced chat list performance for large collections
+  - Chats load in chunks and render progressively
+  - Loading indicator shows progress during initial load
+  - Virtual scrolling for lists with 100+ chats
+  - Smooth, incremental rendering prevents UI freezes
+  - Better perceived performance for users with thousands of chats
+
+### Technical Improvements
+- **Chunked Message Processing**: Efficient message handling for image extraction
+  - Messages processed in chunks of 100 to keep UI responsive
+  - 10ms delay between chunks prevents blocking
+  - Progressive image extraction from cached or fresh messages
+  - Character photos extracted immediately, chat images processed incrementally
+- **Image State Management**: Robust state tracking for progressive loading
+  - `isLoadingImages` flag tracks extraction progress
+  - `renderedImageCount` tracks displayed images for infinite scroll
+  - `selectedImageUrls` Set tracks selections across all loaded batches
+  - Loading card creation time tracked for minimum display enforcement
+  - Proper cleanup and state reset when popup closes
+- **Caching Optimization**: Smart cache utilization for instant image display
+  - When messages are cached, images load immediately (no loading card)
+  - Bypasses progressive loading for cached data to improve UX
+  - Maintains progressive loading for fresh API calls
+  - Optimal balance between performance and user feedback
+
+### Performance Improvements
+- **Reduced Initial Load Time**: Images appear faster when cached
+  - No loading card delay when all data is already available
+  - Immediate image display for previously viewed chats
+  - Faster popup opening for cached conversations
+- **Better Memory Management**: Efficient rendering for large image collections
+  - Only renders visible images in infinite scroll mode
+  - Virtual scrolling reduces DOM node count
+  - Progressive loading prevents memory spikes
+  - Proper cleanup prevents memory leaks
+
+### Bug Fixes
+- Fixed loading card not appearing when popup first opens
+- Fixed loading card disappearing too early when images are cached
+- Fixed "Select All" only selecting visible images in infinite scroll mode
+- Fixed loading card not showing when grid is initially empty
+- Improved loading card visibility during character photo loading
+- Fixed loading card removal timing when no images are found
+
+### User Experience
+- **Faster Image Discovery**: Loading card provides immediate feedback
+  - Users know immediately that images are being processed
+  - Clear indication of progress with "Checking for Images" message
+  - No confusion about whether popup is working or frozen
+- **Flexible Viewing Options**: Choose between pagination and infinite scroll
+  - Pagination mode protects server from overload
+  - Infinite scroll mode for seamless browsing experience
+  - User preference saved across sessions
+- **Smoother Performance**: Progressive loading eliminates UI freezes
+  - Chat list loads incrementally for large collections
+  - Images appear as they're discovered, not all at once
+  - Responsive UI throughout the loading process
+  - Better experience for users with extensive chat histories
+
+-----
+
 ## Version 2.2.9 - Image Viewer Enhancements & UI Refinements
 
 ### New Features

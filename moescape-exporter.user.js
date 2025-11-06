@@ -3,7 +3,7 @@
 // @namespace    Holly
 // @author       Holly
 // @collaborator Dagyr
-// @version      2.3.0
+// @version      2.3.1
 // @description  Preserve your Tavern conversations. Supports both Moescape and Yodayo.
 // @match        https://yodayo.com/*
 // @match        https://moescape.ai/*
@@ -49,7 +49,13 @@
 
     // Pagination state
     let currentPage = 1
-    let pageSize = 20
+    // Load page size from localStorage, default to 20
+    let savedPageSize = localStorage.getItem('hollyImagePageSize');
+    let pageSize = savedPageSize ? parseInt(savedPageSize, 10) : 20;
+    // Ensure page size is valid (8, 20, or 50)
+    if (pageSize !== 8 && pageSize !== 20 && pageSize !== 50) {
+        pageSize = 20;
+    }
     let totalImages = 0
     let filteredImages = []
     
@@ -1549,7 +1555,7 @@
 
         // Create infinite scroll label
         var infiniteScrollLabel = document.createElement('span')
-        infiniteScrollLabel.textContent = 'Infinite Scroll for Images (Pagination protects server)'
+        infiniteScrollLabel.textContent = 'Infinite Scroll for Images'
         infiniteScrollLabel.style.cssText = 'color: ' + colorScheme.textPrimary + '; font-size: clamp(14px, 3vw, 16px); cursor: pointer; user-select: none; flex: 1;'
 
         infiniteScrollToggleContainer.appendChild(infiniteScrollToggleSwitch)
@@ -4904,8 +4910,12 @@
                     // Pagination controls
                     var pageSizeSelect = imagePopup.querySelector('#page-size-select');
                     if (pageSizeSelect) {
+                        // Set the value from saved preference (in case HTML didn't set it correctly)
+                        pageSizeSelect.value = String(pageSize);
                         pageSizeSelect.addEventListener('change', function() {
                             pageSize = parseInt(this.value, 10);
+                            // Save preference to localStorage
+                            localStorage.setItem('hollyImagePageSize', String(pageSize));
                             currentPage = 1;
                             ImageManager.updatePaginationControls();
                             ImageManager.displayCurrentPage();
@@ -5111,9 +5121,9 @@
                     '<div style="display: flex; align-items: center; gap: clamp(6px, 1.5vw, 12px); flex-wrap: wrap;">' +
                         '<span style="color: ' + colorScheme.textSecondary + '; font-size: clamp(10px, 2.5vw, 12px); white-space: nowrap;">Show:</span>' +
                         '<select id="page-size-select" style="background: ' + colorScheme.cardBackground + '; color: ' + colorScheme.textPrimary + '; border: 1px solid ' + colorScheme.border + '; border-radius: 4px; padding: clamp(2px, 0.5vw, 4px) clamp(6px, 1.5vw, 8px); font-size: clamp(10px, 2.5vw, 12px); cursor: pointer;">' +
-                            '<option value="8">8</option>' +
-                            '<option value="20" selected>20</option>' +
-                            '<option value="50">50</option>' +
+                            '<option value="8"' + (pageSize === 8 ? ' selected' : '') + '>8</option>' +
+                            '<option value="20"' + (pageSize === 20 ? ' selected' : '') + '>20</option>' +
+                            '<option value="50"' + (pageSize === 50 ? ' selected' : '') + '>50</option>' +
                         '</select>' +
                     '</div>' +
                     '<div style="display: flex; align-items: center; gap: clamp(6px, 1.5vw, 12px); flex-wrap: wrap;">' +
@@ -5287,8 +5297,12 @@
                 // Pagination controls
                 var pageSizeSelect = imagePopup.querySelector('#page-size-select');
                 if (pageSizeSelect) {
+                    // Set the value from saved preference (in case HTML didn't set it correctly)
+                    pageSizeSelect.value = String(pageSize);
                     pageSizeSelect.addEventListener('change', function() {
                         pageSize = parseInt(this.value, 10);
+                        // Save preference to localStorage
+                        localStorage.setItem('hollyImagePageSize', String(pageSize));
                         currentPage = 1;
                         ImageManager.updatePaginationControls();
                         ImageManager.displayCurrentPage();
@@ -6253,6 +6267,11 @@
                 grid.addEventListener('click', function(e) {
                     var target = e.target;
                     
+                    // Ignore clicks directly on the grid (blank space)
+                    if (target === grid) {
+                        return;
+                    }
+                    
                     // Handle checkbox clicks for infinite scroll mode
                     if (target.classList && target.classList.contains('image-checkbox')) {
                         var useInfiniteScroll = isInfiniteScrollEnabled();
@@ -6275,11 +6294,17 @@
                         img = target;
                     } else {
                         // Walk up to find the img in the card
+                        // Only search within image cards, not in the loading card or other elements
                         var parent = target.parentElement;
                         while (parent && parent !== grid) {
+                            // Check if we're inside an image card (has an img with data-image-index)
                             var imgInParent = parent.querySelector('img[data-image-index]');
                             if (imgInParent) {
                                 img = imgInParent;
+                                break;
+                            }
+                            // Stop if we hit the loading card or other non-image elements
+                            if (parent.id === 'image-loading-card') {
                                 break;
                             }
                             parent = parent.parentElement;
@@ -6309,8 +6334,16 @@
             if (!grid) return;
 
             var loadingCard = grid.querySelector('#image-loading-card');
-            var hasMoreImages = renderedImageCount < filteredImages.length;
-            // Show loading card when extracting images OR when there are more images to render
+            var useInfiniteScroll = isInfiniteScrollEnabled();
+            
+            // In infinite scroll mode: check if more images need to be rendered
+            // In pagination mode: only show when images are still being extracted (don't care about rendering)
+            var hasMoreImages = false;
+            if (useInfiniteScroll) {
+                hasMoreImages = renderedImageCount < filteredImages.length;
+            }
+            
+            // Show loading card when extracting images OR when there are more images to render (infinite scroll only)
             // Always show when isLoadingImages is true, even if grid is empty
             var shouldShowLoading = isLoadingImages || hasMoreImages;
 
@@ -6356,8 +6389,9 @@
                     document.head.appendChild(spinStyle);
                 }
 
-                // Setup intersection observer for infinite scroll (only if not still extracting)
-                if (!isLoadingImages && hasMoreImages) {
+                // Setup intersection observer for infinite scroll (only if infinite scroll is enabled and not still extracting)
+                var useInfiniteScroll = isInfiniteScrollEnabled();
+                if (useInfiniteScroll && !isLoadingImages && hasMoreImages) {
                     this.setupImageInfiniteScroll();
                 }
             } else {
@@ -6382,7 +6416,18 @@
                             setTimeout(function() {
                                 var card = document.querySelector('#image-loading-card');
                                 // Double-check conditions before removing
-                                if (card && !isLoadingImages && renderedImageCount >= filteredImages.length) {
+                                // In pagination mode: only check isLoadingImages
+                                // In infinite scroll mode: check both isLoadingImages and renderedImageCount
+                                var useInfiniteScroll = isInfiniteScrollEnabled();
+                                var shouldRemove = false;
+                                if (useInfiniteScroll) {
+                                    shouldRemove = card && !isLoadingImages && renderedImageCount >= filteredImages.length;
+                                } else {
+                                    // Pagination mode: only check if extraction is complete
+                                    shouldRemove = card && !isLoadingImages;
+                                }
+                                
+                                if (shouldRemove) {
                                     card.remove();
                                     console.log('Loading card removed (after minimum display time)');
                                 } else {
@@ -6390,7 +6435,8 @@
                                         cardExists: !!card,
                                         isLoadingImages: isLoadingImages,
                                         renderedCount: renderedImageCount,
-                                        filteredLength: filteredImages.length
+                                        filteredLength: filteredImages.length,
+                                        useInfiniteScroll: useInfiniteScroll
                                     });
                                 }
                             }, remainingTime);
@@ -6409,13 +6455,30 @@
             }
             
             // Setup intersection observer when extraction completes but more images need rendering
-            if (shouldShowLoading && !isLoadingImages && hasMoreImages && !imageLoadingObserver) {
+            // Only set up infinite scroll if the setting is enabled (not in pagination mode)
+            var useInfiniteScroll = isInfiniteScrollEnabled();
+            if (useInfiniteScroll && shouldShowLoading && !isLoadingImages && hasMoreImages && !imageLoadingObserver) {
                 this.setupImageInfiniteScroll();
+            } else if (!useInfiniteScroll && imageLoadingObserver) {
+                // Disconnect observer if infinite scroll is disabled (pagination mode)
+                imageLoadingObserver.disconnect();
+                imageLoadingObserver = null;
             }
         },
 
-        // Setup IntersectionObserver for infinite scroll
+        // Setup IntersectionObserver for infinite scroll (only when infinite scroll is enabled)
         setupImageInfiniteScroll: function() {
+            // Only set up infinite scroll if the setting is enabled
+            var useInfiniteScroll = isInfiniteScrollEnabled();
+            if (!useInfiniteScroll) {
+                // Disconnect observer if infinite scroll is disabled
+                if (imageLoadingObserver) {
+                    imageLoadingObserver.disconnect();
+                    imageLoadingObserver = null;
+                }
+                return;
+            }
+
             var grid = document.querySelector('#images-grid');
             if (!grid) return;
 
@@ -6541,6 +6604,18 @@
                     grid.setAttribute('data-click-delegation-added', 'true');
                     grid.addEventListener('click', function(e) {
                         var target = e.target;
+                        
+                        // Ignore clicks directly on the grid (blank space)
+                        if (target === grid) {
+                            return;
+                        }
+                        
+                        // Handle checkbox clicks - don't open image viewer
+                        if (target.classList && target.classList.contains('image-checkbox')) {
+                            e.stopPropagation(); // Prevent event from bubbling
+                            return; // Don't trigger image viewer for checkbox clicks
+                        }
+                        
                         var img = null;
                         
                         if (target.tagName === 'IMG' && target.hasAttribute('data-image-index')) {
@@ -6548,9 +6623,14 @@
                         } else {
                             var parent = target.parentElement;
                             while (parent && parent !== grid) {
+                                // Check if we're inside an image card (has an img with data-image-index)
                                 var imgInParent = parent.querySelector('img[data-image-index]');
                                 if (imgInParent) {
                                     img = imgInParent;
+                                    break;
+                                }
+                                // Stop if we hit the loading card or other non-image elements
+                                if (parent.id === 'image-loading-card') {
                                     break;
                                 }
                                 parent = parent.parentElement;

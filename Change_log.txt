@@ -1,5 +1,45 @@
 # Change Log - Tavern Chat Downloader
 
+## Version 2.3.1 - Bug Fixes & User Preference Persistence
+
+### Bug Fixes
+- **Fixed Checkbox Clicks Opening Image Viewer**: Checkbox clicks in image popup no longer trigger image viewer
+  - Added proper event handling to detect checkbox clicks and prevent image viewer opening
+  - Applied fix to both pagination and infinite scroll modes
+  - Checkboxes now only toggle selection state without opening viewer
+- **Fixed Blank Space Clicks Opening Images**: Clicking blank space in image grid no longer opens first image
+  - Added check to ignore clicks directly on grid container (blank space/padding)
+  - Improved click handler to stop searching when encountering loading card
+  - Only clicks on actual images or within image cards now trigger viewer
+- **Fixed Page Size Preference Not Persisting**: Page size selection now persists across page refreshes
+  - Page size preference now saved to localStorage with key `hollyImagePageSize`
+  - Value loaded from localStorage on script initialization
+  - Selector value explicitly set when popup opens to ensure correct display
+  - Preference persists across browser sessions like other settings (auto-close, infinite scroll)
+  - Validates saved preference is one of: 8, 20, or 50 (defaults to 20 if invalid)
+
+### Technical Improvements
+- **Enhanced Click Handler Logic**: Improved event delegation for image grid clicks
+  - Better detection of click targets (checkbox, image, blank space, loading card)
+  - Proper event propagation handling to prevent unintended behaviors
+  - Consistent behavior across pagination and infinite scroll modes
+- **Preference Management**: Standardized user preference storage
+  - Page size preference follows same localStorage pattern as other settings
+  - Explicit value setting ensures UI matches saved preference
+  - Preference validation ensures only valid values are used
+
+### User Experience
+- **Better Interaction**: More intuitive image selection and viewing
+  - Can select images without accidentally opening viewer
+  - Clicking blank space doesn't trigger unexpected actions
+  - Page size preference remembered, reducing need to reconfigure
+- **Consistent Settings**: All user preferences now persist properly
+  - Page size, infinite scroll, and auto-close preferences all saved
+  - Settings survive page refreshes and browser sessions
+  - Reliable user experience with fewer repeated configurations
+
+-----
+
 ## Version 2.3.0 - Performance Update & Progressive Image Loading
 
 ### New Features
